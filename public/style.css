@@ -138,32 +138,30 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 }
 .board-notes textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(20,115,230,.12); }
 .notes-helper { margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.35; }
-.notes-toggle-btn {
-  border: 1px solid #bfd0e5;
-  border-radius: 8px;
-  padding: 6px 9px;
-  background: #fff;
-  color: var(--navy-700);
-  font-size: 11px;
-  font-weight: 850;
-}
-.notes-toggle-btn:hover { background:#edf5ff; }
-.show-notes-tab {
-  align-self: stretch;
-  min-width: 42px;
-  border: 1px solid #bfd0e5;
-  border-radius: 10px;
-  background: #fff;
-  color: var(--blue);
+.oval-notes-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 9px;
+  padding: 7px 10px;
+  background: rgba(7,23,44,.88);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,.18);
   font-size: 11px;
   font-weight: 900;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  padding: 10px 7px;
-  box-shadow: 0 4px 10px rgba(7,23,44,.10);
+  line-height: 1;
 }
-.show-notes-tab:hover { background:#edf5ff; }
-.field-notes-layout.notes-hidden { grid-template-columns: minmax(0, 1fr) 42px; }
+.oval-notes-toggle:hover { background: rgba(11,34,64,.96); }
+.oval-notes-toggle[aria-pressed="true"] {
+  background: var(--blue);
+  border-color: rgba(255,255,255,.95);
+}
+.field-notes-layout.notes-hidden { grid-template-columns: minmax(0, 1fr); }
 .field-notes-layout.notes-hidden .oval { max-width: 100%; }
 
 
@@ -331,12 +329,12 @@ footer {
   .field-card, .info-card, .setup-card, .roster-card { padding:12px; border-radius:12px; }
   .field-notes-layout { grid-template-columns: 1fr; }
   .field-notes-layout.notes-hidden { grid-template-columns: 1fr; }
-  .show-notes-tab { writing-mode: horizontal-tb; transform:none; min-width:0; width:100%; padding:9px; }
   .board-notes { min-height: 180px; }
   .board-notes textarea { min-height: 130px; }
   .section-heading { display:block; }
   .section-heading p { text-align:left; margin-top:5px; }
   .oval { min-height: 0; aspect-ratio: .72 / 1; max-width: 100%; border-radius: 14px; }
+  .oval-notes-toggle { top:7px; right:7px; padding:6px 8px; font-size:10px; }
   .position-node { width: clamp(94px, 24%, 126px); }
   .position-role { font-size:8px; padding:1px 5px; }
   .position-input { height:29px; font-size:9px; padding:4px; }

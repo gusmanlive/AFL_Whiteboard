@@ -264,11 +264,15 @@
 
   function renderNotesVisibility(){
     const panel=$('boardNotesPanel');
-    const showBtn=$('showNotesBtn');
+    const toggleBtn=$('notesToggleBtn');
     const layout=document.querySelector('.field-notes-layout');
     if(panel) panel.hidden=!notesVisible;
-    if(showBtn) showBtn.hidden=notesVisible;
     if(layout) layout.classList.toggle('notes-hidden', !notesVisible);
+    if(toggleBtn){
+      toggleBtn.setAttribute('aria-pressed', String(notesVisible));
+      toggleBtn.setAttribute('aria-label', notesVisible ? 'Hide notes' : 'Show notes');
+      toggleBtn.title=notesVisible ? 'Hide notes' : 'Show notes';
+    }
   }
 
   function setNotesVisible(visible){
@@ -770,8 +774,7 @@
 
   document.addEventListener('DOMContentLoaded', async()=>{
     renderAll(); bindDetails(); bindNotes();
-    $('hideNotesBtn')?.addEventListener('click',()=>setNotesVisible(false));
-    $('showNotesBtn')?.addEventListener('click',()=>setNotesVisible(true));
+    $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));
     $('goWhiteboardBtn').addEventListener('click',()=>setTab('whiteboard'));
