@@ -586,17 +586,12 @@
       const m=String(state.details.wind||'').match(/([0-9]+(?:\.[0-9]+)?)\s*km\/h/i);
       windSpeed=m?Number(m[1]):0;
     }
-    const url=new URL('./ground.html',window.location.href);
+    const url=new URL('./groundconditions.html',window.location.href);
     const values={
       lat:String(lat),lon:String(lon),
+      venue:state.details.location||state.details.weatherLocation||'',
       location:state.details.weatherLocation||state.details.location||'',
-      date:state.details.date||'',time:state.details.time||'',
-      home:state.details.homeTeam||'',away:state.details.awayTeam||'',
-      weather:state.details.weather||'',temperature:state.details.temperature||'',
-      rain:state.details.rain||'',rainChance:state.details.rainChance||'',
-      previous72Rain:Number.isFinite(Number(state.details.previous72Rain))?String(state.details.previous72Rain):'',
-      groundCondition:state.details.groundCondition||'',groundConditionNote:state.details.groundConditionNote||'',
-      wind:state.details.wind||'',windSpeed:String(windSpeed||0),windDirection:windDir===null?'':String(windDir)
+      date:state.details.date||'',time:state.details.time||''
     };
     Object.entries(values).forEach(([key,value])=>url.searchParams.set(key,value));
     opened.location.href=url.toString();

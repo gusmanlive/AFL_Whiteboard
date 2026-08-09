@@ -1,5 +1,5 @@
-const CACHE_NAME = 'afl-coaches-whiteboard-v1.0.8';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './sync-adapter.js', './manifest.json', './afl-whiteboard-logo.png', './ground.html'];
+const CACHE_NAME = 'afl-coaches-whiteboard-v1.0.9';
+const ASSETS = ['./', './index.html', './style.css', './app.js', './sync-adapter.js', './manifest.json', './afl-whiteboard-logo.png', './groundconditions.html'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
