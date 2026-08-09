@@ -1,136 +1,33 @@
-# AFL Coaches Whiteboard
+# Deploy AFL Coaches Whiteboard v1.1.0 to Cloudflare
 
-Version 1.0.9
+This version uses a Cloudflare Worker with static assets + a SQLite-backed Durable Object. It can still be kept in GitHub and deployed through Cloudflare.
 
-A local-first browser whiteboard for AFL coaches. This first version is deliberately backend-free so the Whiteboard and Setup workflow can be tested before adding shared Cloudflare boards.
+## Option A — Cloudflare Git integration
+1. Push this project folder to GitHub.
+2. In Cloudflare, create/import a Workers project from that GitHub repository.
+3. Use `npm install` as the install command if requested.
+4. Use `npm run deploy` / `npx wrangler deploy` as the deploy command.
+5. Cloudflare reads `wrangler.jsonc`, creates the `SharedBoard` SQLite-backed Durable Object namespace and serves `public/` as the app.
+6. Attach your existing custom domain to the Worker if desired.
 
-## Features
-
-- Whiteboard tab with a drawn AFL oval
-- All 18 AFL positions shown on the field
-- Four interchange / bench positions
-- Each position accepts either:
-  - a player selected from the Setup roster, or
-  - manually typed text
-- Setup tab with:
-  - Date
-  - Time
-  - Home Team
-  - Away Team
-  - Location
-  - player Number, First Name, Surname
-- Up to 50 roster entries
-- Duplicate player-number warning
-- Duplicate on-field/bench player warning
-- Automatic browser localStorage persistence
-- Offline service worker after first hosted load
-- Responsive layout for desktop, tablet and mobile
-- Sync adapter boundary ready for a later Cloudflare implementation
-
-## Run locally
-
-The simplest local test is to open `index.html` directly in a browser. LocalStorage will work.
-
-For full service-worker/offline behaviour, serve the folder from a local HTTP server, for example:
-
-```bash
-python -m http.server 8080
+## Option B — Wrangler from a workstation
+```
+npm install
+npx wrangler login
+npm run deploy
 ```
 
-Then browse to `http://localhost:8080`.
-
-## GitHub / Cloudflare Pages
-
-This folder can be committed directly to a GitHub repository and deployed as a static Cloudflare Pages site. No build command is required.
-
-Suggested Cloudflare Pages configuration:
-
-- Framework preset: None
-- Build command: leave blank
-- Build output directory: `/`
-
-## Cloudflare sharing hook
-
-`sync-adapter.js` is the integration boundary for the next version. The current `LocalSyncAdapter` is intentionally a no-op.
-
-A future `CloudflareSyncAdapter` can implement the same methods:
-
-- `connect()`
-- `publish(state)`
-- `subscribe(handler)`
-- `disconnect()`
-
-That adapter can connect the browser to a Cloudflare Worker and a Durable Object using WebSockets, while `app.js` and the UI continue to use the same board-state model.
-
-### Current state shape
-
-```js
-{
-  schemaVersion: 4,
-  boardId: null,
-  mode: 'local',
-  details: {
-    date: '',
-    time: '',
-    homeTeam: '',
-    awayTeam: '',
-    location: '',
-    weatherLocation: '',
-    latitude: null,
-    longitude: null,
-    temperature: '',
-    weather: '',
-    wind: ''
-  },
-  roster: [
-    { id, number, firstName, surname }
-  ],
-  assignments: {
-    ff: { playerId, text },
-    chf: { playerId, text },
-    // ... all 18 positions and 4 bench slots
-  },
-  updatedAt: ''
-}
+## Local development
 ```
+npm install
+npm run dev
+```
+Open the local URL printed by Wrangler. Shared boards work locally through the emulated Durable Object.
 
-## Version 2 sharing concept
+## Retention
+Each board schedules a Durable Object alarm for 30 days after the most recent access/edit. Every join, authenticated reload, WebSocket connection or board update resets that alarm. When the alarm fires after 30 days of inactivity, board state and editor sessions are deleted.
 
-Proposed next layer:
-
-1. Create Board generates a 6-character code.
-2. Optional Coach PIN provides edit access.
-3. Another device enters the board code.
-4. A Cloudflare Worker routes both devices to one Durable Object.
-5. WebSocket messages carry state changes in both directions.
-6. LocalStorage remains as an offline/cache fallback.
-
----
-
-Copyright © Gumball Spec – All rights reserved
-
-
-## Version 1.0.9
-- Ground Conditions opens in a dedicated new browser tab with a satellite/street map, match details, wind compass, wind speed and wind-direction overlays.
-- The Ground Conditions page refreshes hourly weather for the closest match time when online.
-- Team-list import accepts the normal `#teamlist` CSV format, one-line numbered lists, and copied two-line number/name lists including Markdown bullets/bold formatting.
-- Captain and vice-captain suffixes such as `(c)` and `(vc)` are retained in player names.
-- Match details remain Setup-only and display read-only on Whiteboard.
-- Oval retains white perimeter and centre markings, blue top 50m arc and red bottom 50m arc.
-- Location & Weather setup supports search, GPS, weather lookup, comments and Ground Conditions.
-
-
-## Version 1.0.9
-- Weather Lookup now displays a ground-surface estimate (Dry / firm, Damp / slippery, Wet, or Very wet / soft).
-- Ground estimate is saved with the weather result and is also shown on the detailed Ground Conditions map.
-- Team-list import removes PlayHQ status markers `(c)`, `(vc)`, `(dvc)` and `(SP)` from player names.
-
-
-## Version 1.0.9
-- Whiteboard player panels widened by approximately 20%.
-- Rostered player labels shortened to #number Firstname SurnameInitial (for example, #12 Jack C). Manual typed labels remain unchanged.
-
-
-## v1.0.9 Ground Conditions
-
-The Ground Conditions page is the same `groundconditions.html` implementation used by the supplied AFL Team Stat Capture App, providing consistent satellite-map, information panel, compass, wind arrows and controls.
+## Notes
+- Share Board does not work from a `file://` URL because there is no backend. The rest of the app remains local-first.
+- The Coach PIN is checked by the Worker. The stored board record contains a salted SHA-256 representation rather than the clear-text PIN.
+- A browser receives an editor session token after a successful create/join so it can reconnect without repeatedly asking for the PIN during the same board lifecycle.

@@ -1,212 +1,262 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#07172c" />
-  <title>AFL Coaches Whiteboard</title>
-  <link rel="icon" type="image/png" href="afl-whiteboard-logo.png" />
-  <link rel="apple-touch-icon" href="afl-whiteboard-logo.png" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header class="app-header">
-    <div class="brand-wrap">
-      <div class="brand-mark">
-        <img src="afl-whiteboard-logo.png" alt="AFL Whiteboard logo" />
-      </div>
-      <div>
-        <h1>AFL COACHES WHITEBOARD</h1>
-        <p>Gumball Spec • All rights reserved</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <div class="version">Version 1.0.9</div>
-      <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
-    </div>
-  </header>
+/**
+ * AFL Coaches Whiteboard Cloudflare sync adapter - v1.1.0
+ *
+ * Uses same-origin /api endpoints served by the Cloudflare Worker bundled with
+ * this project. Local board use continues to work when no backend is present.
+ */
+(function () {
+  'use strict';
 
-  <main class="app-shell">
-    <nav class="tabs" aria-label="Application tabs">
-      <button class="tab active" type="button" data-tab="whiteboard">Whiteboard</button>
-      <button class="tab" type="button" data-tab="setup">Setup</button>
-    </nav>
+  const SESSION_KEY = 'afl-whiteboard-share-session-v1';
+  const CLIENT_KEY = 'afl-whiteboard-client-id-v1';
+  const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-    <section id="whiteboard" class="tab-panel active">
-      <div class="status-row">
-        <div>
-          <span class="eyebrow">BOARD STATUS</span>
-          <span class="status-pill local">LOCAL BOARD</span>
-        </div>
-        <div class="autosave">Autosaves on this device</div>
-      </div>
+  function clientId() {
+    let id = localStorage.getItem(CLIENT_KEY);
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : `c_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+      localStorage.setItem(CLIENT_KEY, id);
+    }
+    return id;
+  }
 
-      <div class="whiteboard-layout">
-        <section class="field-card card">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">TEAM BOARD</span>
-              <h2>Starting 18</h2>
-            </div>
-            <p>Select from the Setup roster or type a name/role.</p>
-          </div>
+  function cleanCode(value) {
+    return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  }
 
-          <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
-            <svg class="field-markings" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
-              <ellipse cx="50" cy="70" rx="43" ry="58" class="field-outline" />
-              <path d="M 21 34 Q 50 61 79 34" class="field-arc field-arc-top" />
-              <path d="M 21 106 Q 50 79 79 106" class="field-arc field-arc-bottom" />
-              <rect x="31" y="57" width="38" height="26" class="field-square" />
-              <circle cx="50" cy="70" r="4.3" class="field-circle" />
-            </svg>
-            <div id="positionLayer"></div>
-          </div>
+  function randomCode() {
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => ALPHABET[b % ALPHABET.length]).join('');
+  }
 
-          <div class="bench-wrap">
-            <div class="section-heading bench-heading">
-              <div>
-                <span class="eyebrow">INTERCHANGE</span>
-                <h2>Bench</h2>
-              </div>
-              <span class="bench-count">4 positions</span>
-            </div>
-            <div id="benchGrid" class="bench-grid"></div>
-          </div>
-        </section>
+  class CloudflareSyncAdapter {
+    constructor() {
+      this.mode = 'local';
+      this.onRemoteState = null;
+      this.onStatusChange = null;
+      this.socket = null;
+      this.session = this.readSession();
+      this.revision = 0;
+      this.retryTimer = null;
+      this.retryCount = 0;
+      this.manualDisconnect = false;
+      this.pendingState = null;
+      this.publishTimer = null;
+      this.status = { mode: this.session ? 'shared' : 'local', connection: 'local', code: this.session?.code || '', connectedCount: 0, message: '' };
+      window.addEventListener('online', () => { if (this.session && !this.socket) this.openSocket(); });
+      window.addEventListener('offline', () => this.setStatus({ connection: 'offline', message: 'Offline — changes are saved locally and will sync after reconnecting.' }));
+    }
 
-        <aside class="info-card card">
-          <div class="section-heading compact">
-            <div>
-              <span class="eyebrow">MATCH</span>
-              <h2>Match Details</h2>
-            </div>
-          </div>
-          <dl class="match-info">
-            <div><dt>Date</dt><dd id="infoDate">—</dd></div>
-            <div><dt>Time</dt><dd id="infoTime">—</dd></div>
-            <div><dt>Home Team</dt><dd id="infoHome">—</dd></div>
-            <div><dt>Away Team</dt><dd id="infoAway">—</dd></div>
-            <div><dt>Location</dt><dd id="infoLocation">—</dd></div>
-          </dl>
-          <button id="editSetupBtn" class="btn primary full" type="button">Edit Setup</button>
+    readSession() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+        if (parsed?.code && parsed?.token) return parsed;
+      } catch (_) {}
+      return null;
+    }
 
-          <div class="sharing-preview">
-            <span class="eyebrow">SHARING LAYER</span>
-            <h3>Cloud-ready structure</h3>
-            <p>This version is local only. Board state is isolated behind a sync adapter ready for Cloudflare Workers / Durable Objects.</p>
-            <button class="btn secondary full" type="button" disabled>Share Board — next version</button>
-          </div>
-        </aside>
-      </div>
-    </section>
+    saveSession(session) {
+      this.session = session;
+      if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      else localStorage.removeItem(SESSION_KEY);
+    }
 
-    <section id="setup" class="tab-panel">
-      <div class="setup-grid">
-        <section class="card setup-card">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">MATCH SETUP</span>
-              <h2>Match Details</h2>
-            </div>
-            <p>Enter match details here. The Whiteboard tab only displays these values.</p>
-          </div>
+    baseUrl() {
+      if (window.AFL_WHITEBOARD_SYNC_URL) return String(window.AFL_WHITEBOARD_SYNC_URL).replace(/\/$/, '');
+      if (location.protocol === 'http:' || location.protocol === 'https:') return location.origin;
+      return '';
+    }
 
-          <div class="form-grid">
-            <label>Date
-              <input id="matchDate" type="date" autocomplete="off" />
-            </label>
-            <label>Time
-              <input id="matchTime" type="time" autocomplete="off" />
-            </label>
-            <label>Home Team
-              <input id="homeTeam" type="text" placeholder="e.g. South Gawler" autocomplete="off" />
-            </label>
-            <label>Away Team
-              <input id="awayTeam" type="text" placeholder="e.g. Gawler Central" autocomplete="off" />
-            </label>
-            <label class="wide">Location
-              <input id="location" type="text" placeholder="e.g. South Gawler Oval" autocomplete="off" />
-            </label>
-          </div>
-        </section>
+    setStatus(patch) {
+      this.status = { ...this.status, ...patch, code: this.session?.code || this.status.code || '' };
+      if (this.onStatusChange) this.onStatusChange({ ...this.status });
+    }
 
-        <section class="card team-list-card">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">TEAM LIST</span>
-              <h2>Player List</h2>
-            </div>
-          </div>
-          <p class="helper team-list-help"><strong>Copy &amp; Paste a PlayHQ Line-Up here, OR enter manually using the #teamlist format (number,firstname,surname).</strong><br>
-          Maximum 50 players; player numbers must be unique. You can also paste lists where each player number is on one line and the player name is on the next line. Captain/permit markers such as (c), (vc), (dvc) and (SP) are automatically removed. The saved list populates every player selector on the Whiteboard.</p>
-          <textarea id="teamListInput" class="team-list-input" spellcheck="false" placeholder="#teamlist&#10;&#10;1,Firstname,Surname&#10;2,Firstname,Surname2&#10;3,Firstname,Surname3&#10;4,And,So-On"></textarea>
-          <div class="team-list-actions">
-            <button id="saveTeamListBtn" class="btn primary" type="button">Save Team List</button>
-            <button id="clearRosterBtn" class="btn secondary" type="button">Clear Team List</button>
-            <span id="rosterCount">0/50 loaded</span>
-          </div>
-          <div id="teamListStatus" class="inline-status" role="status" aria-live="polite"></div>
-        </section>
+    getStatus() { return { ...this.status }; }
+    onStatus(handler) { this.onStatusChange = handler; if (handler) handler(this.getStatus()); return () => { this.onStatusChange = null; }; }
+    subscribe(handler) { this.onRemoteState = handler; return () => { this.onRemoteState = null; }; }
 
-        <section class="card weather-card">
-          <div class="section-heading">
-            <div>
-              <span class="eyebrow">LOCATION &amp; WEATHER</span>
-              <h2>📍 Location &amp; Weather</h2>
-            </div>
-          </div>
-          <p class="helper weather-help">Match Location above remains a free-text board field and is not used for weather. Enter a separate location below, or leave it blank and use GPS. Weather uses the match date; when date is blank it uses today.</p>
+    async api(path, options = {}) {
+      const base = this.baseUrl();
+      if (!base) throw new Error('Sharing requires the app to be hosted on Cloudflare. Local file mode remains available.');
+      const response = await fetch(`${base}${path}`, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+      });
+      let body = null;
+      try { body = await response.json(); } catch (_) {}
+      if (!response.ok) {
+        const err = new Error(body?.error || `Share service error (${response.status})`);
+        err.status = response.status;
+        throw err;
+      }
+      return body || {};
+    }
 
-          <label class="weather-location-label">Location
-            <input id="weatherLocation" type="text" placeholder="e.g. Gawler, South Australia" autocomplete="off" />
-          </label>
+    async connect() {
+      if (!this.session) {
+        this.mode = 'local';
+        this.setStatus({ mode: 'local', connection: 'local', code: '', connectedCount: 0, message: '' });
+        return { mode: 'local', connected: false };
+      }
+      try {
+        const result = await this.api(`/api/boards/${encodeURIComponent(this.session.code)}/snapshot`, {
+          method: 'GET', headers: { Authorization: `Bearer ${this.session.token}` }
+        });
+        this.mode = 'shared';
+        this.revision = Number(result.revision || 0);
+        if (result.state && this.onRemoteState) this.onRemoteState(result.state, { revision: this.revision, code: this.session.code });
+        this.openSocket();
+        return { mode: 'shared', connected: false, code: this.session.code, state: result.state, revision: this.revision };
+      } catch (error) {
+        if (error.status === 401 || error.status === 404 || error.status === 410) {
+          this.saveSession(null);
+          this.mode = 'local';
+          this.setStatus({ mode: 'local', connection: 'local', code: '', connectedCount: 0, message: 'The previous shared board is no longer available.' });
+          return { mode: 'local', connected: false, expired: true };
+        }
+        this.mode = 'shared';
+        this.setStatus({ mode: 'shared', connection: navigator.onLine ? 'reconnecting' : 'offline', message: error.message });
+        this.scheduleReconnect();
+        return { mode: 'shared', connected: false, code: this.session.code };
+      }
+    }
 
-          <div class="weather-actions">
-            <button id="lookupLocationBtn" class="btn secondary" type="button">🔎 Lookup Location</button>
-            <button id="getGpsBtn" class="btn secondary" type="button">📌 Get GPS</button>
-            <button id="lookupWeatherBtn" class="btn primary" type="button">☁ Lookup Weather</button>
-            <button id="viewGroundBtn" class="btn dark" type="button">🛠 View Ground Conditions</button>
-          </div>
+    async createBoard(pin, state) {
+      if (!/^\d{4}$/.test(String(pin || ''))) throw new Error('Coach PIN must be exactly 4 digits.');
+      let lastError;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const code = randomCode();
+        try {
+          const sharedState = { ...state, boardId: code, mode: 'shared' };
+          const result = await this.api(`/api/boards/${code}/create`, {
+            method: 'POST', body: JSON.stringify({ pin: String(pin), state: sharedState, clientId: clientId() })
+          });
+          this.saveSession({ code, token: result.token });
+          this.mode = 'shared';
+          this.revision = Number(result.revision || 1);
+          this.manualDisconnect = false;
+          this.setStatus({ mode: 'shared', connection: 'reconnecting', code, connectedCount: 0, message: 'Board created. Connecting…' });
+          this.openSocket();
+          return { ...result, code, state: sharedState };
+        } catch (error) {
+          lastError = error;
+          if (error.status !== 409) throw error;
+        }
+      }
+      throw lastError || new Error('Could not generate a unique board code. Try again.');
+    }
 
-          <div id="weatherSummary" class="weather-summary" hidden></div>
+    async joinBoard(code, pin) {
+      code = cleanCode(code);
+      if (code.length !== 6) throw new Error('Enter the 6-character board code.');
+      if (!/^\d{4}$/.test(String(pin || ''))) throw new Error('Coach PIN must be exactly 4 digits.');
+      const result = await this.api(`/api/boards/${code}/join`, {
+        method: 'POST', body: JSON.stringify({ pin: String(pin), clientId: clientId() })
+      });
+      this.saveSession({ code, token: result.token });
+      this.mode = 'shared';
+      this.revision = Number(result.revision || 0);
+      this.manualDisconnect = false;
+      this.setStatus({ mode: 'shared', connection: 'reconnecting', code, connectedCount: 0, message: 'Joining board…' });
+      if (result.state && this.onRemoteState) this.onRemoteState(result.state, { revision: this.revision, code });
+      this.openSocket();
+      return { ...result, code };
+    }
 
-          <section id="groundEstimate" class="ground-estimate-card" hidden aria-live="polite">
-            <div class="ground-estimate-heading">
-              <span class="eyebrow">GROUND SURFACE ESTIMATE</span>
-              <strong id="groundEstimateLabel">—</strong>
-            </div>
-            <div class="ground-rain-metrics">
-              <div><span>Previous 72 hrs rain</span><strong id="previous72RainText">—</strong></div>
-              <div><span>Match-day rain</span><strong id="matchDayRainText">—</strong></div>
-            </div>
-            <p id="groundEstimateNote"></p>
-            <small>Estimate uses recent rainfall and match-day weather. Drainage, soil, irrigation, grass coverage and prior use can change actual conditions.</small>
-          </section>
+    openSocket() {
+      if (!this.session || this.manualDisconnect) return;
+      if (!navigator.onLine) {
+        this.setStatus({ mode: 'shared', connection: 'offline', message: 'Offline — using local copy.' });
+        return;
+      }
+      if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) return;
+      const base = this.baseUrl();
+      if (!base) return;
+      const url = new URL(base);
+      url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+      url.pathname = `/api/boards/${encodeURIComponent(this.session.code)}/ws`;
+      url.searchParams.set('token', this.session.token);
+      url.searchParams.set('client', clientId());
+      this.setStatus({ mode: 'shared', connection: 'reconnecting', message: this.retryCount ? 'Reconnecting…' : 'Connecting…' });
+      const ws = new WebSocket(url.toString());
+      this.socket = ws;
+      ws.onopen = () => {
+        this.retryCount = 0;
+        this.setStatus({ mode: 'shared', connection: 'live', message: 'Live sync connected.' });
+        if (this.pendingState) {
+          const queued = this.pendingState;
+          this.pendingState = null;
+          this.publish(queued);
+        }
+      };
+      ws.onmessage = event => {
+        let msg; try { msg = JSON.parse(event.data); } catch (_) { return; }
+        if (msg.type === 'hello' || msg.type === 'state') {
+          this.revision = Number(msg.revision || this.revision);
+          if (msg.state && this.onRemoteState) this.onRemoteState(msg.state, { revision: this.revision, code: this.session?.code });
+          if (Number.isFinite(Number(msg.connectedCount))) this.setStatus({ connectedCount: Number(msg.connectedCount) });
+        } else if (msg.type === 'presence') {
+          this.setStatus({ connectedCount: Number(msg.connectedCount || 0) });
+        } else if (msg.type === 'error') {
+          this.setStatus({ message: msg.error || 'Sync error.' });
+        }
+      };
+      ws.onerror = () => {};
+      ws.onclose = event => {
+        if (this.socket === ws) this.socket = null;
+        if (this.manualDisconnect || !this.session) return;
+        if (event.code === 4401 || event.code === 4404 || event.code === 4410) {
+          this.saveSession(null);
+          this.mode = 'local';
+          this.setStatus({ mode: 'local', connection: 'local', code: '', connectedCount: 0, message: 'Shared board is no longer available.' });
+          return;
+        }
+        this.setStatus({ mode: 'shared', connection: navigator.onLine ? 'reconnecting' : 'offline', message: navigator.onLine ? 'Connection lost — reconnecting…' : 'Offline — using local copy.' });
+        this.scheduleReconnect();
+      };
+    }
 
-          <div id="locationWeatherStatus" class="inline-status" role="status" aria-live="polite"></div>
+    scheduleReconnect() {
+      if (!this.session || this.manualDisconnect || this.retryTimer) return;
+      const delay = Math.min(15000, 1000 * Math.pow(1.7, this.retryCount++));
+      this.retryTimer = setTimeout(() => { this.retryTimer = null; this.openSocket(); }, delay);
+    }
 
-          <label class="weather-comments-label">Weather comments
-            <input id="weatherComments" type="text" placeholder="comment on weather" autocomplete="off" />
-          </label>
-        </section>
+    async publish(state) {
+      if (!this.session || this.mode !== 'shared') return;
+      this.pendingState = { ...state, boardId: this.session.code, mode: 'shared' };
+      if (this.publishTimer) clearTimeout(this.publishTimer);
+      this.publishTimer = setTimeout(() => {
+        this.publishTimer = null;
+        const sharedState = this.pendingState;
+        if (!sharedState) return;
+        if (this.socket?.readyState === WebSocket.OPEN) {
+          this.pendingState = null;
+          this.socket.send(JSON.stringify({ type: 'state', baseRevision: this.revision, state: sharedState }));
+        } else {
+          this.openSocket();
+        }
+      }, 120);
+    }
 
-        <div class="setup-footer-actions">
-          <button id="goWhiteboardBtn" class="btn primary" type="button">Open Whiteboard</button>
-        </div>
-      </div>
-    </section>
-  </main>
+    async disconnect(options = {}) {
+      this.manualDisconnect = true;
+      if (this.retryTimer) clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+      if (this.socket) {
+        try { this.socket.close(1000, 'Leaving board'); } catch (_) {}
+        this.socket = null;
+      }
+      if (options.clearSession !== false) this.saveSession(null);
+      this.mode = 'local';
+      this.pendingState = null;
+      if (this.publishTimer) clearTimeout(this.publishTimer);
+      this.publishTimer = null;
+      this.setStatus({ mode: 'local', connection: 'local', code: '', connectedCount: 0, message: '' });
+    }
+  }
 
-
-  <datalist id="playerOptions"></datalist>
-
-  <footer>
-    <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.0.9</span>
-  </footer>
-
-  <script src="sync-adapter.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+  window.WhiteboardSync = { createAdapter() { return new CloudflareSyncAdapter(); } };
+})();
