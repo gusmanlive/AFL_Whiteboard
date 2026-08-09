@@ -1,4 +1,4 @@
-# AFL Coaches Whiteboard v1.2.0
+# AFL Coaches Whiteboard v1.3.3
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
 
@@ -15,7 +15,7 @@ Local-first AFL coaching whiteboard with optional real-time Cloudflare shared bo
 - Added a narrow Coach Notes text box beside the AFL oval.
 - Notes autosave locally and are included in live shared-board synchronisation.
 - On smaller screens the Notes box stacks below the oval.
-- Create a shared board with a six-character Board Code and four-digit Coach PIN.
+- Create a shared board with a six-character Board Code and four-digit Board PIN.
 - Join the same board from other devices.
 - Live full-board synchronization over Cloudflare Durable Object WebSockets.
 - Connected coach count, live/reconnecting/offline state and automatic reconnect.
@@ -30,4 +30,4 @@ This release is packaged as one Cloudflare Worker that serves the static app and
 
 
 ## Share links
-When a board is active, **Share Board** creates a URL containing only the 6-character board code. Opening that link preloads the board and asks the recipient only for the 4-digit Coach PIN. The PIN is never placed in the URL. Devices supporting the Web Share API open the native share sheet; other browsers copy the invite URL to the clipboard.
+When a board is active, **Share Board** creates a URL containing only the 6-character board code. Opening that link preloads the board and asks the recipient only for the 4-digit Board PIN. The PIN is never placed in the URL. Devices supporting the Web Share API open the native share sheet; other browsers copy the invite URL to the clipboard.

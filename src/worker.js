@@ -99,7 +99,7 @@ export class SharedBoard extends DurableObject {
     let body;
     try { body = await request.json(); } catch (_) { return json({ error: "Invalid request." }, 400); }
     const pin = String(body.pin || "");
-    if (!/^\d{4}$/.test(pin)) return json({ error: "Coach PIN must be exactly 4 digits." }, 400);
+    if (!/^\d{4}$/.test(pin)) return json({ error: "Board PIN must be exactly 4 digits." }, 400);
     const stateText = JSON.stringify(body.state || {});
     if (encoder.encode(stateText).byteLength > MAX_STATE_BYTES) return json({ error: "Board data is too large." }, 413);
     const salt = crypto.randomUUID();
@@ -125,7 +125,7 @@ export class SharedBoard extends DurableObject {
     if (!meta) return json({ error: "Board not found or has expired." }, 404);
     let body;
     try { body = await request.json(); } catch (_) { return json({ error: "Invalid request." }, 400); }
-    if (!(await this.verifyPin(meta, body.pin))) return json({ error: "Incorrect Board Code or Coach PIN." }, 401);
+    if (!(await this.verifyPin(meta, body.pin))) return json({ error: "Incorrect Board Code or Board PIN." }, 401);
     meta = await this.touch(meta);
     const sessionToken = await this.issueSession(body.clientId);
     const state = (await this.ctx.storage.get("state")) || {};

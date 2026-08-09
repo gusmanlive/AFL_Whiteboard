@@ -124,7 +124,7 @@
     }
 
     async createBoard(pin, state) {
-      if (!/^\d{4}$/.test(String(pin || ''))) throw new Error('Coach PIN must be exactly 4 digits.');
+      if (!/^\d{4}$/.test(String(pin || ''))) throw new Error('Board PIN must be exactly 4 digits.');
       let lastError;
       for (let attempt = 0; attempt < 8; attempt++) {
         const code = randomCode();
@@ -151,7 +151,7 @@
     async joinBoard(code, pin) {
       code = cleanCode(code);
       if (code.length !== 6) throw new Error('Enter the 6-character board code.');
-      if (!/^\d{4}$/.test(String(pin || ''))) throw new Error('Coach PIN must be exactly 4 digits.');
+      if (!/^\d{4}$/.test(String(pin || ''))) throw new Error('Board PIN must be exactly 4 digits.');
       const result = await this.api(`/api/boards/${code}/join`, {
         method: 'POST', body: JSON.stringify({ pin: String(pin), clientId: clientId() })
       });

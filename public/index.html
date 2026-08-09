@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.3.2</div>
+      <div class="version">Version 1.3.3</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -46,7 +46,7 @@
         <section class="field-card card">
           <div class="section-heading board-heading">
             <div class="board-heading-main">
-              <input id="boardTitleInput" class="board-title-input" type="text" maxlength="80" placeholder="e.g. South Gawler U15, Q1" aria-label="Board title" />
+              <input id="boardTitleInput" class="board-title-input" type="text" maxlength="80" placeholder="Your Team Name" aria-label="Board title" />
               <span class="eyebrow">TEAM BOARD</span>
               <h2 id="starting18Heading">Starting 18</h2>
             </div>
@@ -67,6 +67,7 @@
                     <button class="magnet-swatch magnet-red" type="button" data-magnet-color="red" aria-label="Red magnet" title="Red magnet"></button>
                     <button class="magnet-swatch magnet-yellow" type="button" data-magnet-color="yellow" aria-label="Yellow magnet" title="Yellow magnet"></button>
                     <button class="magnet-swatch magnet-green" type="button" data-magnet-color="green" aria-label="Green magnet" title="Green magnet"></button>
+                    <button class="magnet-swatch magnet-pink" type="button" data-magnet-color="pink" aria-label="Pink magnet" title="Pink magnet"></button>
                   </div>
                   <div class="oval-magnets-help">Select a colour, then tap a position.</div>
                 </div>
@@ -128,10 +129,10 @@
             <span class="eyebrow">SHARED BOARD</span>
 
             <div id="shareLocalPanel">
-              <h3 id="shareLocalHeading">Share with coaches</h3>
-              <p id="shareLocalIntro">Create a live board or join one from another device. Shared boards are automatically deleted after <strong>30 days without activity</strong>.</p>
+              <h3 id="shareLocalHeading">Share with others</h3>
+              <p id="shareLocalIntro">Create a live board or join one from another device. Pin numbers keep your board private. Shared boards are automatically deleted after <strong>30 days without activity</strong>.</p>
               <div id="createBoardSection">
-                <label class="share-label" for="sharePin">Coach PIN</label>
+                <label class="share-label" for="sharePin">Board PIN</label>
                 <input id="sharePin" class="share-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="4 digits" />
                 <button id="createBoardBtn" class="btn primary full share-action" type="button">Create Board</button>
                 <div class="share-divider"><span>or join</span></div>
@@ -140,7 +141,7 @@
                 <label class="share-label" for="joinBoardCode">Board Code</label>
                 <input id="joinBoardCode" class="share-input board-code-input" type="text" maxlength="6" autocomplete="off" placeholder="ABC123" />
               </div>
-              <label class="share-label" for="joinBoardPin">Coach PIN</label>
+              <label class="share-label" for="joinBoardPin">Board PIN</label>
               <input id="joinBoardPin" class="share-input" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 digits" />
               <button id="joinBoardBtn" class="btn secondary full share-action" type="button">Join Board</button>
             </div>
@@ -251,10 +252,6 @@
           </section>
 
           <div id="locationWeatherStatus" class="inline-status" role="status" aria-live="polite"></div>
-
-          <label class="weather-comments-label">Weather comments
-            <input id="weatherComments" type="text" placeholder="comment on weather" autocomplete="off" />
-          </label>
         </section>
 
         <div class="setup-footer-actions">
@@ -269,7 +266,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.1.9</span>
+    <span>AFL Coaches Whiteboard • v1.3.3</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

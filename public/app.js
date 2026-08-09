@@ -7,7 +7,7 @@
   const MAX_PLAYERS = 50;
   const DEFAULT_BENCH_COUNT = 4;
   const MAX_BENCH_COUNT = 12;
-  const MAGNET_COLORS = ['black','blue','red','yellow','green'];
+  const MAGNET_COLORS = ['black','blue','red','yellow','green','pink'];
 
   const POSITIONS = [
     { id:'fp_left', role:'FP', label:'Forward Pocket', x:28.5, y:17 },
@@ -51,8 +51,14 @@
       windSpeed:null, windDirection:null,
       groundCondition:'', groundConditionNote:'',
       previous72Rain:null, previous72RainDays:[], previous72RainSource:'', previous72RainComplete:false, previous72RainLabel:'Previous 72 hrs rain',
-      weatherComments:'', weatherUpdated:''
+      weatherUpdated:''
     };
+  }
+
+  function sanitizeDetails(details={}){
+    const cleaned={...details};
+    delete cleaned.weatherComments;
+    return cleaned;
   }
 
   function defaultState(){
@@ -72,7 +78,7 @@
       benchCount:DEFAULT_BENCH_COUNT,
       assignments,
       magnets,
-      magnetNextNumber:{black:1,blue:1,red:1,yellow:1,green:1},
+      magnetNextNumber:{black:1,blue:1,red:1,yellow:1,green:1,pink:1},
       updatedAt:new Date().toISOString()
     };
   }
@@ -90,7 +96,7 @@
         if(!assignments[slot.id]) assignments[slot.id]={playerId:'',text:''};
         if(!(slot.id in rawMagnets)) rawMagnets[slot.id]='';
       });
-      const used={black:new Set(),blue:new Set(),red:new Set(),yellow:new Set(),green:new Set()};
+      const used={black:new Set(),blue:new Set(),red:new Set(),yellow:new Set(),green:new Set(),pink:new Set()};
       const magnets={};
       [...POSITIONS,...benchSlots(benchCount)].forEach(slot=>{
         const value=rawMagnets[slot.id];
@@ -110,7 +116,7 @@
         ...parsed,
         schemaVersion:10,
         benchCount,
-        details:{...base.details, ...(parsed.details || {})},
+        details:sanitizeDetails({...base.details, ...(parsed.details || {})}),
         assignments,
         magnets,
         magnetNextNumber:{...base.magnetNextNumber,...(parsed.magnetNextNumber||{})},
@@ -487,7 +493,6 @@
     $('awayTeam').value=state.details.awayTeam||'';
     $('location').value=state.details.location||'';
     $('weatherLocation').value=state.details.weatherLocation||'';
-    $('weatherComments').value=state.details.weatherComments||'';
   }
 
   function serializeRoster(){
@@ -610,7 +615,7 @@
   }
 
   function bindDetails(){
-    const mapping={matchDate:'date',matchTime:'time',homeTeam:'homeTeam',awayTeam:'awayTeam',location:'location',weatherLocation:'weatherLocation',weatherComments:'weatherComments'};
+    const mapping={matchDate:'date',matchTime:'time',homeTeam:'homeTeam',awayTeam:'awayTeam',location:'location',weatherLocation:'weatherLocation'};
     Object.entries(mapping).forEach(([elementId,key])=>{
       $(elementId).addEventListener('input',event=>{
         state.details[key]=event.target.value;
@@ -751,7 +756,7 @@
       saveState(); renderWeatherSummary();
       setWeatherStatus(`Weather saved for ${formatDate(date)||date}. It remains available after the lookup.`);
       return true;
-    }catch(error){ setWeatherStatus(`${error.message}. Forecasts may not be available far in advance; weather comments can still be entered manually.`,true); return false; }
+    }catch(error){ setWeatherStatus(`${error.message}. Forecasts may not be available far in advance.`,true); return false; }
   }
   function groundConditionEstimate(){
     const previous=Number(state.details.previous72Rain);
@@ -801,7 +806,6 @@
     if(state.details.wind) parts.push(`Wind ${state.details.wind}`);
     if(state.details.rain) parts.push(`Match-day rain ${state.details.rain}${state.details.rainChance?` (${state.details.rainChance})`:''}`);
     if(Number.isFinite(Number(state.details.previous72Rain))) parts.push(`Previous 72 hrs ${Number(state.details.previous72Rain).toFixed(Number(state.details.previous72Rain)>=10?0:1)} mm`);
-    if(state.details.weatherComments) parts.push(`Comment: ${state.details.weatherComments}`);
     el.hidden=!parts.length;
     el.innerHTML=parts.map(escapeHtml).join(' &nbsp;•&nbsp; ');
 
@@ -902,9 +906,9 @@
     if($('createBoardSection')) $('createBoardSection').hidden=true;
     if($('joinBoardCodeSection')) $('joinBoardCodeSection').hidden=true;
     if($('shareLocalHeading')) $('shareLocalHeading').textContent='Join Shared Board';
-    if($('shareLocalIntro')) $('shareLocalIntro').innerHTML=`Board <strong>${escapeHtml(code)}</strong> is ready to join. Enter the 4-digit Coach PIN.`;
+    if($('shareLocalIntro')) $('shareLocalIntro').innerHTML=`Board <strong>${escapeHtml(code)}</strong> is ready to join. Enter the 4-digit Board PIN.`;
     if($('joinBoardPin')){
-      $('joinBoardPin').placeholder='Enter Coach PIN';
+      $('joinBoardPin').placeholder='Enter Board PIN';
       setTimeout(()=>$('joinBoardPin')?.focus(),50);
     }
   }
@@ -913,8 +917,8 @@
     if(inviteBoardCode) return;
     if($('createBoardSection')) $('createBoardSection').hidden=false;
     if($('joinBoardCodeSection')) $('joinBoardCodeSection').hidden=false;
-    if($('shareLocalHeading')) $('shareLocalHeading').textContent='Share with coaches';
-    if($('shareLocalIntro')) $('shareLocalIntro').innerHTML='Create a live board or join one from another device. Shared boards are automatically deleted after <strong>30 days without activity</strong>.';
+    if($('shareLocalHeading')) $('shareLocalHeading').textContent='Share with others';
+    if($('shareLocalIntro')) $('shareLocalIntro').innerHTML='Create a live board or join one from another device. Pin numbers keep your board private. Shared boards are automatically deleted after <strong>30 days without activity</strong>.';
     if($('joinBoardPin')) $('joinBoardPin').placeholder='4 digits';
   }
 
@@ -960,7 +964,7 @@
 
   async function createSharedBoard(){
     const pin=String($('sharePin')?.value || '').trim();
-    if(!/^\d{4}$/.test(pin)){ setShareMessage('Enter a 4-digit Coach PIN.','error'); return; }
+    if(!/^\d{4}$/.test(pin)){ setShareMessage('Enter a 4-digit Board PIN.','error'); return; }
     setShareBusy(true); setShareMessage('Creating shared board…');
     try{
       const result=await syncAdapter.createBoard(pin,snapshot());
@@ -978,7 +982,7 @@
     const code=normaliseBoardCode(inviteBoardCode || $('joinBoardCode')?.value || '');
     const pin=String($('joinBoardPin')?.value || '').trim();
     if(code.length!==6){ setShareMessage('Enter the 6-character Board Code.','error'); return; }
-    if(!/^\d{4}$/.test(pin)){ setShareMessage('Enter the 4-digit Coach PIN.','error'); return; }
+    if(!/^\d{4}$/.test(pin)){ setShareMessage('Enter the 4-digit Board PIN.','error'); return; }
     setShareBusy(true); setShareMessage(`Joining ${code}…`);
     try{
       const result=await syncAdapter.joinBoard(code,pin);
@@ -1014,7 +1018,7 @@
     if(!url){ setShareMessage('Could not create the board link.','error'); return; }
     const shareData={
       title:'AFL Coaches Whiteboard',
-      text:`Join AFL Coaches Whiteboard ${state.boardId}. You will need the Coach PIN.`,
+      text:`Join AFL Coaches Whiteboard ${state.boardId}. You will need the Board PIN.`,
       url
     };
     try{
@@ -1040,7 +1044,7 @@
   }
   function mergeRemoteState(remote){
     if(!remote || typeof remote!=='object') return;
-    state={...state,...remote,benchCount:Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(remote.benchCount||state.benchCount)||DEFAULT_BENCH_COUNT)),details:{...state.details,...(remote.details||{})},assignments:{...state.assignments,...(remote.assignments||{})},magnets:{...state.magnets,...(remote.magnets||{})},magnetNextNumber:{...state.magnetNextNumber,...(remote.magnetNextNumber||{})},roster:Array.isArray(remote.roster)?remote.roster.filter(Boolean).map(cleanRosterPlayer):state.roster};
+    state={...state,...remote,benchCount:Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(remote.benchCount||state.benchCount)||DEFAULT_BENCH_COUNT)),details:sanitizeDetails({...state.details,...(remote.details||{})}),assignments:{...state.assignments,...(remote.assignments||{})},magnets:{...state.magnets,...(remote.magnets||{})},magnetNextNumber:{...state.magnetNextNumber,...(remote.magnetNextNumber||{})},roster:Array.isArray(remote.roster)?remote.roster.filter(Boolean).map(cleanRosterPlayer):state.roster};
     saveState({publish:false}); renderAll();
   }
   function renderAll(){

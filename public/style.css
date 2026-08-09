@@ -257,6 +257,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .magnet-red { background:#dc2626; }
 .magnet-yellow { background:#facc15; }
 .magnet-green { background:#16a34a; }
+.magnet-pink { background:#ec4899; }
 .oval-magnets-help {
   margin-top: 6px;
   color: rgba(255,255,255,.84);
@@ -283,6 +284,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .position-magnet-dot.magnet-red { background:#dc2626; }
 .position-magnet-dot.magnet-yellow { background:#facc15; }
 .position-magnet-dot.magnet-green { background:#16a34a; }
+.position-magnet-dot.magnet-pink { background:#ec4899; }
 
 .oval {
   position: relative;
@@ -370,6 +372,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .bench-magnet-dot.magnet-red { background:#dc2626; }
 .bench-magnet-dot.magnet-yellow { background:#facc15; }
 .bench-magnet-dot.magnet-green { background:#16a34a; }
+.bench-magnet-dot.magnet-pink { background:#ec4899; }
 .bench-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .bench-slot { position:relative; border: 1px solid var(--line); border-radius: 10px; padding: 9px; background: #f8fafc; }
 .bench-slot label { display:block; color:var(--navy-700); font-size:11px; font-weight:900; margin-bottom:5px; }
@@ -545,12 +548,11 @@ footer {
 .team-list-actions #rosterCount { margin-left: 2px; }
 .inline-status { min-height: 20px; margin-top: 9px; color: #166534; font-size: 12px; font-weight: 750; }
 .inline-status.error { color: #b42318; }
-.weather-location-label, .weather-comments-label { display:block; color:var(--navy-800); font-size:12px; font-weight:850; }
-.weather-location-label input, .weather-comments-label input { display:block; width:100%; margin-top:7px; padding:12px; border:1px solid #cbd5e1; border-radius:10px; outline:none; background:#fff; color:var(--text); }
+.weather-location-label { display:block; color:var(--navy-800); font-size:12px; font-weight:850; }
+.weather-location-label input { display:block; width:100%; margin-top:7px; padding:12px; border:1px solid #cbd5e1; border-radius:10px; outline:none; background:#fff; color:var(--text); }
 .weather-actions { display:flex; gap:10px; flex-wrap:wrap; margin: 14px 0 6px; }
 .btn.dark { background: #07366d; color:#fff; }
 .weather-summary { margin-top: 12px; padding: 12px 14px; border:1px solid #cfe0f5; border-radius:11px; background:#f4f8fd; color:var(--navy-900); font-size:13px; line-height:1.55; }
-.weather-comments-label { margin-top: 14px; }
 .setup-footer-actions { display:flex; justify-content:flex-end; }
 @media (max-width:760px){
   .team-list-card, .weather-card { padding:12px; }
