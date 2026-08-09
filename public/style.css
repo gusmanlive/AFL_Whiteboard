@@ -156,16 +156,21 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   z-index: 6;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  border: 1px solid rgba(255,255,255,.9);
-  border-radius: 9px;
-  padding: 7px 10px;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,.88);
+  border-radius: 12px;
+  padding: 8px 9px;
   background: rgba(7,23,44,.88);
   color: #fff;
   box-shadow: 0 3px 10px rgba(0,0,0,.18);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .05em;
 }
 .oval-notes-toggle:hover { background: rgba(11,34,64,.96); }
 .oval-notes-toggle[aria-pressed="true"] {
@@ -313,7 +318,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 
 .position-node {
   position: absolute; transform: translate(-50%,-50%);
-  width: clamp(104px, 17.82%, 149px);
+  width: clamp(88px, 15.15%, 127px);
   z-index: 2;
   overflow: visible;
 }
@@ -456,12 +461,12 @@ footer {
   .section-heading { display:block; }
   .section-heading p { text-align:left; margin-top:5px; }
   .oval { min-height: 0; aspect-ratio: .72 / 1; max-width: 100%; border-radius: 14px; }
-  .oval-notes-toggle { top:7px; right:7px; padding:6px 8px; font-size:10px; }
+  .oval-notes-toggle { top:7px; right:7px; height:36px; padding:7px 8px; font-size:9px; }
   .oval-magnets { top:7px; left:7px; padding:7px 8px; min-width: 132px; }
   .oval-magnets-help { font-size:9px; }
   .magnet-swatch { width:20px; height:20px; }
   .magnets-toggle-btn { width:20px; height:20px; font-size:12px; }
-  .position-node { width: clamp(85px, 21.6%, 113px); }
+  .position-node { width: clamp(72px, 18.36%, 96px); }
   .position-role { font-size:8px; padding:1px 5px; }
   .position-input { height:29px; font-size:9px; padding:4px; }
   .bench-grid { grid-template-columns: repeat(2,1fr); }
@@ -479,7 +484,7 @@ footer {
   .ground-rain-metrics { grid-template-columns:1fr; }
   .app-header h1 { font-size:17px; }
   .oval { aspect-ratio: .72 / 1; }
-  .position-node { width: 23.76%; }
+  .position-node { width: 20.20%; }
   .oval-magnets { min-width: 118px; }
   .oval-magnet-buttons { gap:6px; }
   .position-magnet-dot { width: 12px; height: 12px; flex-basis: 12px; }
