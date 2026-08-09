@@ -193,7 +193,11 @@
     const down=$('boardScaleDownBtn');
     const up=$('boardScaleUpBtn');
     const scale=currentBoardScale();
-    if(oval) oval.style.setProperty('--board-scale', String(scale));
+    if(oval){
+      const boxScale = 1 + ((scale - 1) * 0.35);
+      oval.style.setProperty('--board-scale', String(scale));
+      oval.style.setProperty('--board-box-scale', String(boxScale));
+    }
     if(current){
       const percent=Math.round(scale*100);
       current.textContent=boardScaleMode === 'manual' ? `${percent}%` : `Auto ${percent}%`;
