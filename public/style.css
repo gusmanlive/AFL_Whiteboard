@@ -188,13 +188,45 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   box-shadow: 0 3px 10px rgba(0,0,0,.18);
   min-width: 148px;
 }
+.oval-magnets.is-collapsed {
+  min-width: 0;
+  padding-bottom: 8px;
+}
+.oval-magnets-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
 .oval-magnets-label {
   display:block;
-  margin-bottom: 6px;
+  margin-bottom: 0;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: .1em;
   text-transform: uppercase;
+}
+.magnets-toggle-btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:22px;
+  height:22px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:6px;
+  background: rgba(255,255,255,.08);
+  color:#fff;
+  font-size:13px;
+  font-weight:900;
+  line-height:1;
+}
+.magnets-toggle-btn:hover { background: rgba(255,255,255,.14); }
+.oval-magnets-body {
+  margin-top: 6px;
+}
+.oval-magnets.is-collapsed .oval-magnets-body {
+  display:none;
 }
 .oval-magnet-buttons {
   display:flex;
@@ -230,16 +262,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   box-shadow: 0 2px 7px rgba(0,0,0,.14);
 }
 .position-magnet-dot {
-  position: absolute;
-  left: -15px;
-  top: 50%;
-  transform: translate(-100%, -50%);
+  display:inline-block;
   width: 14px;
   height: 14px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,.92);
   box-shadow: 0 2px 5px rgba(0,0,0,.22);
   pointer-events: none;
+  flex: 0 0 14px;
 }
 .position-magnet-dot.magnet-black { background:#111827; }
 .position-magnet-dot.magnet-blue { background:#2563eb; }
@@ -287,8 +317,17 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   z-index: 2;
   overflow: visible;
 }
+.position-label-row {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  margin: 0 auto 4px;
+  width: max-content;
+  max-width: 100%;
+}
 .position-role {
-  display: block; margin: 0 auto 4px; width: max-content; max-width: 100%;
+  display: block; margin: 0; width: max-content; max-width: 100%;
   padding: 2px 7px; border-radius: 999px;
   background: rgba(6,18,33,.84); color: #fff;
   font-size: 10px; font-weight: 900; letter-spacing: .04em;
@@ -421,6 +460,7 @@ footer {
   .oval-magnets { top:7px; left:7px; padding:7px 8px; min-width: 132px; }
   .oval-magnets-help { font-size:9px; }
   .magnet-swatch { width:20px; height:20px; }
+  .magnets-toggle-btn { width:20px; height:20px; font-size:12px; }
   .position-node { width: clamp(85px, 21.6%, 113px); }
   .position-role { font-size:8px; padding:1px 5px; }
   .position-input { height:29px; font-size:9px; padding:4px; }
@@ -441,9 +481,8 @@ footer {
   .oval { aspect-ratio: .72 / 1; }
   .position-node { width: 23.76%; }
   .oval-magnets { min-width: 118px; }
-  .oval-magnets-label { margin-bottom:5px; }
   .oval-magnet-buttons { gap:6px; }
-  .position-magnet-dot { left: -12px; width: 12px; height: 12px; }
+  .position-magnet-dot { width: 12px; height: 12px; flex-basis: 12px; }
   .position-input { font-size:8px; }
   .bench-grid { grid-template-columns:1fr 1fr; }
   .match-info { grid-template-columns:1fr; }

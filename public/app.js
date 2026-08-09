@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = 'afl-coaches-whiteboard-v1';
   const NOTES_VISIBILITY_KEY = 'afl-coaches-whiteboard-notes-visible';
+  const MAGNETS_COLLAPSED_KEY = 'afl-coaches-whiteboard-magnets-collapsed';
   const MAX_PLAYERS = 50;
   const MAGNET_COLORS = ['black','blue','red','yellow','green'];
 
@@ -105,8 +106,16 @@
       return saved === null ? false : saved === 'true';
     }catch(_){ return false; }
   }
+  function loadMagnetsCollapsed(){
+    try{
+      const saved=localStorage.getItem(MAGNETS_COLLAPSED_KEY);
+      return saved === null ? false : saved === 'true';
+    }catch(_){ return false; }
+  }
+
   let notesVisible=loadNotesVisible();
   let activeMagnetColor='';
+  let magnetsCollapsed=loadMagnetsCollapsed();
 
 
   function snapshot(){ return JSON.parse(JSON.stringify(state)); }
@@ -189,6 +198,24 @@
     renderMagnetPalette();
   }
 
+  function renderMagnetPaletteVisibility(){
+    const panel=$('ovalMagnets');
+    const toggleBtn=$('magnetsToggleBtn');
+    if(panel) panel.classList.toggle('is-collapsed', magnetsCollapsed);
+    if(toggleBtn){
+      toggleBtn.textContent = magnetsCollapsed ? '▾' : '▴';
+      toggleBtn.setAttribute('aria-expanded', String(!magnetsCollapsed));
+      toggleBtn.setAttribute('aria-label', magnetsCollapsed ? 'Expand magnets' : 'Collapse magnets');
+      toggleBtn.title = magnetsCollapsed ? 'Expand magnets' : 'Collapse magnets';
+    }
+  }
+
+  function setMagnetsCollapsed(collapsed){
+    magnetsCollapsed=Boolean(collapsed);
+    try{ localStorage.setItem(MAGNETS_COLLAPSED_KEY, String(magnetsCollapsed)); }catch(_){ }
+    renderMagnetPaletteVisibility();
+  }
+
   function togglePositionMagnet(positionId, color){
     if(!positionId || !MAGNET_COLORS.includes(color) || !state.magnets || !(positionId in state.magnets)) return;
     state.magnets[positionId] = state.magnets[positionId] === color ? '' : color;
@@ -213,8 +240,7 @@
       const magnetClass = magnetColor ? ' has-magnet' : '';
       return `
       <div class="position-node${magnetClass}" data-position-node="${pos.id}" style="left:${pos.x}%; top:${pos.y}%;">
-        ${magnetDot}
-        <label class="position-role" for="pos_${pos.id}" title="${escapeHtml(pos.label)}">${pos.role}</label>
+        <div class="position-label-row">${magnetDot}<label class="position-role" for="pos_${pos.id}" title="${escapeHtml(pos.label)}">${pos.role}</label></div>
         <input id="pos_${pos.id}" class="position-input" type="text" list="playerOptions" autocomplete="off" aria-label="${escapeHtml(pos.label)} player" placeholder="Player" data-assignment="${pos.id}" value="${escapeHtml(assignmentDisplay(state.assignments[pos.id]))}" />
       </div>`;
     }).join('');
@@ -912,7 +938,7 @@
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
-    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette();
+    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility();
   }
   function registerServiceWorker(){
     if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});
@@ -921,6 +947,7 @@
   document.addEventListener('DOMContentLoaded', async()=>{
     renderAll(); applyInviteFromUrl(); bindDetails(); bindBoardTitle(); bindNotes();
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
+    $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));
