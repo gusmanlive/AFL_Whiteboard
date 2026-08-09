@@ -6,6 +6,7 @@
   const MAGNETS_COLLAPSED_KEY = 'afl-coaches-whiteboard-magnets-collapsed';
   const BOARD_SCALE_MODE_KEY = 'afl-coaches-whiteboard-board-scale-mode';
   const BOARD_SCALE_VALUE_KEY = 'afl-coaches-whiteboard-board-scale-value';
+  const BOARD_SCALE_COLLAPSED_KEY = 'afl-coaches-whiteboard-board-scale-collapsed';
   const MAX_PLAYERS = 50;
   const DEFAULT_BENCH_COUNT = 4;
   const MAX_BENCH_COUNT = 12;
@@ -159,12 +160,19 @@
       return 1.2;
     }catch(_){ return 1.2; }
   }
+  function loadBoardScaleCollapsed(){
+    try{
+      const saved=localStorage.getItem(BOARD_SCALE_COLLAPSED_KEY);
+      return saved === null ? true : saved === 'true';
+    }catch(_){ return true; }
+  }
 
   let notesVisible=loadNotesVisible();
   let activeMagnetColor='';
   let magnetsCollapsed=loadMagnetsCollapsed();
   let boardScaleMode=loadBoardScaleMode();
   let boardScaleValue=loadBoardScaleValue();
+  let boardScaleCollapsed=loadBoardScaleCollapsed();
 
 
   function clampBoardScale(value){
@@ -188,6 +196,8 @@
   }
 
   function renderBoardScaleControls(){
+    const wrap=$('ovalScaleControls');
+    const toggle=$('boardScaleToggleBtn');
     const oval=$('oval');
     const current=$('boardScaleResetBtn');
     const down=$('boardScaleDownBtn');
@@ -198,6 +208,13 @@
       oval.style.setProperty('--board-scale', String(scale));
       oval.style.setProperty('--board-box-scale', String(boxScale));
     }
+    if(wrap) wrap.classList.toggle('is-collapsed', boardScaleCollapsed);
+    if(toggle){
+      toggle.textContent = boardScaleCollapsed ? '▸' : '◂';
+      toggle.setAttribute('aria-expanded', String(!boardScaleCollapsed));
+      toggle.setAttribute('aria-label', boardScaleCollapsed ? 'Expand board font size controls' : 'Collapse board font size controls');
+      toggle.title = boardScaleCollapsed ? 'Expand board font size controls' : 'Collapse board font size controls';
+    }
     if(current){
       const percent=Math.round(scale*100);
       current.textContent=boardScaleMode === 'manual' ? `${percent}%` : `Auto ${percent}%`;
@@ -205,6 +222,12 @@
     }
     if(down) down.disabled = boardScaleMode === 'manual' && scale <= 0.8;
     if(up) up.disabled = boardScaleMode === 'manual' && scale >= 1.6;
+  }
+
+  function setBoardScaleCollapsed(collapsed){
+    boardScaleCollapsed = Boolean(collapsed);
+    try{ localStorage.setItem(BOARD_SCALE_COLLAPSED_KEY, String(boardScaleCollapsed)); }catch(_){ }
+    renderBoardScaleControls();
   }
 
   function persistBoardScale(){
@@ -1356,6 +1379,7 @@
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
+    $('boardScaleToggleBtn')?.addEventListener('click',()=>setBoardScaleCollapsed(!boardScaleCollapsed));
     $('boardScaleDownBtn')?.addEventListener('click',()=>adjustBoardScale(-0.1));
     $('boardScaleUpBtn')?.addEventListener('click',()=>adjustBoardScale(0.1));
     $('boardScaleResetBtn')?.addEventListener('click',resetBoardScaleAuto);

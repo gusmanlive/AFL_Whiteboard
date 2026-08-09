@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.3.7</div>
+      <div class="version">Version 1.3.8</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -83,10 +83,13 @@
                 <circle cx="50" cy="70" r="4.3" class="field-circle" />
               </svg>
               <div id="positionLayer"></div>
-              <div class="oval-scale-controls" aria-label="Board font size controls">
-                <button id="boardScaleDownBtn" class="oval-scale-btn" type="button" aria-label="Decrease board font size">A−</button>
-                <button id="boardScaleResetBtn" class="oval-scale-btn oval-scale-current" type="button" aria-label="Reset board font size to auto">Auto</button>
-                <button id="boardScaleUpBtn" class="oval-scale-btn" type="button" aria-label="Increase board font size">A+</button>
+              <div id="ovalScaleControls" class="oval-scale-controls is-collapsed" aria-label="Board font size controls">
+                <button id="boardScaleToggleBtn" class="oval-scale-toggle" type="button" aria-label="Expand board font size controls" aria-expanded="false" title="Expand board font size controls">▸</button>
+                <div class="oval-scale-controls-body">
+                  <button id="boardScaleDownBtn" class="oval-scale-btn" type="button" aria-label="Decrease board font size">A−</button>
+                  <button id="boardScaleResetBtn" class="oval-scale-btn oval-scale-current" type="button" aria-label="Reset board font size to auto">Auto</button>
+                  <button id="boardScaleUpBtn" class="oval-scale-btn" type="button" aria-label="Increase board font size">A+</button>
+                </div>
               </div>
             </div>
 
@@ -296,7 +299,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.3.7</span>
+    <span>AFL Coaches Whiteboard • v1.3.8</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

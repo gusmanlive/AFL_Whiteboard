@@ -471,6 +471,19 @@ body.image-share-open { overflow:hidden; }
   border: 1px solid rgba(255,255,255,.88);
   box-shadow: 0 3px 10px rgba(0,0,0,.18);
 }
+.oval-scale-controls.is-collapsed {
+  gap: 0;
+  padding-right: 5px;
+}
+.oval-scale-controls-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.oval-scale-controls.is-collapsed .oval-scale-controls-body {
+  display: none;
+}
+.oval-scale-toggle,
 .oval-scale-btn {
   min-width: 42px;
   height: 32px;
@@ -483,6 +496,12 @@ body.image-share-open { overflow:hidden; }
   font-weight: 900;
   line-height: 1;
 }
+.oval-scale-toggle {
+  min-width: 32px;
+  width: 32px;
+  padding: 0;
+}
+.oval-scale-toggle:hover,
 .oval-scale-btn:hover { background: rgba(255,255,255,.14); }
 .oval-scale-current {
   min-width: 76px;
@@ -633,7 +652,9 @@ footer {
   .oval-top-actions { top:7px; right:7px; gap:5px; }
   .oval-notes-toggle, .oval-share-image { height:45px; padding:8px 10px; font-size:11px; }
   .oval-scale-controls { bottom: 7px; gap: 5px; padding: 5px 6px; }
+  .oval-scale-controls.is-collapsed { padding-right: 5px; }
   .oval-scale-btn { min-width: 38px; height: 30px; padding: 0 8px; font-size: 12px; }
+  .oval-scale-toggle { min-width: 30px; width: 30px; height: 30px; font-size: 12px; }
   .oval-scale-current { min-width: 70px; }
   .oval-magnets { top:7px; left:7px; padding:9px 10px; min-width: 165px; }
   .oval-magnets-help { font-size:11px; }
