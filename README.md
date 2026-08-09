@@ -1,15 +1,6 @@
-# AFL Coaches Whiteboard v1.3.4
+# AFL Coaches Whiteboard v1.3.5
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
-
-## New in v1.3.4
-
-- Added a **Share** button directly on the oval for phones, tablets and iPads.
-- Creates a PNG of the oval only: field markings, player positions/names and magnets.
-- Oval controls, Notes, Match Details and interchange are excluded from the image.
-- Image generation is local in the browser and does not upload the board to an image service.
-- **Share Image** uses the device share sheet when file sharing is supported.
-- **Save PNG** saves/downloads the generated image locally.
 
 ## New in v1.2.0
 

@@ -4,6 +4,8 @@
   const STORAGE_KEY = 'afl-coaches-whiteboard-v1';
   const NOTES_VISIBILITY_KEY = 'afl-coaches-whiteboard-notes-visible';
   const MAGNETS_COLLAPSED_KEY = 'afl-coaches-whiteboard-magnets-collapsed';
+  const BOARD_SCALE_MODE_KEY = 'afl-coaches-whiteboard-board-scale-mode';
+  const BOARD_SCALE_VALUE_KEY = 'afl-coaches-whiteboard-board-scale-value';
   const MAX_PLAYERS = 50;
   const DEFAULT_BENCH_COUNT = 4;
   const MAX_BENCH_COUNT = 12;
@@ -144,11 +146,83 @@
       return saved === null ? false : saved === 'true';
     }catch(_){ return false; }
   }
+  function loadBoardScaleMode(){
+    try{
+      const saved=localStorage.getItem(BOARD_SCALE_MODE_KEY);
+      return saved === 'manual' ? 'manual' : 'auto';
+    }catch(_){ return 'auto'; }
+  }
+  function loadBoardScaleValue(){
+    try{
+      const saved=Number(localStorage.getItem(BOARD_SCALE_VALUE_KEY));
+      if(Number.isFinite(saved)) return Math.min(1.6, Math.max(0.8, Math.round(saved*10)/10));
+      return 1.2;
+    }catch(_){ return 1.2; }
+  }
 
   let notesVisible=loadNotesVisible();
   let activeMagnetColor='';
   let magnetsCollapsed=loadMagnetsCollapsed();
+  let boardScaleMode=loadBoardScaleMode();
+  let boardScaleValue=loadBoardScaleValue();
 
+
+  function clampBoardScale(value){
+    const numeric=Number(value);
+    if(!Number.isFinite(numeric)) return 1;
+    return Math.min(1.6, Math.max(0.8, Math.round(numeric*10)/10));
+  }
+
+  function autoBoardScale(){
+    const width=Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0);
+    if(width <= 390) return 1.0;
+    if(width <= 430) return 1.05;
+    if(width <= 600) return 1.12;
+    if(width <= 820) return 1.22;
+    if(width <= 1100) return 1.35;
+    return 1.45;
+  }
+
+  function currentBoardScale(){
+    return boardScaleMode === 'manual' ? clampBoardScale(boardScaleValue) : autoBoardScale();
+  }
+
+  function renderBoardScaleControls(){
+    const oval=$('oval');
+    const current=$('boardScaleResetBtn');
+    const down=$('boardScaleDownBtn');
+    const up=$('boardScaleUpBtn');
+    const scale=currentBoardScale();
+    if(oval) oval.style.setProperty('--board-scale', String(scale));
+    if(current){
+      const percent=Math.round(scale*100);
+      current.textContent=boardScaleMode === 'manual' ? `${percent}%` : `Auto ${percent}%`;
+      current.title=boardScaleMode === 'manual' ? 'Reset board font size to auto' : 'Automatic board font size is active';
+    }
+    if(down) down.disabled = boardScaleMode === 'manual' && scale <= 0.8;
+    if(up) up.disabled = boardScaleMode === 'manual' && scale >= 1.6;
+  }
+
+  function persistBoardScale(){
+    try{
+      localStorage.setItem(BOARD_SCALE_MODE_KEY, boardScaleMode);
+      localStorage.setItem(BOARD_SCALE_VALUE_KEY, String(boardScaleValue));
+    }catch(_){ }
+  }
+
+  function adjustBoardScale(delta){
+    const next=clampBoardScale(currentBoardScale() + delta);
+    boardScaleMode='manual';
+    boardScaleValue=next;
+    persistBoardScale();
+    renderBoardScaleControls();
+  }
+
+  function resetBoardScaleAuto(){
+    boardScaleMode='auto';
+    persistBoardScale();
+    renderBoardScaleControls();
+  }
 
   function snapshot(){ return JSON.parse(JSON.stringify(state)); }
   function saveState({publish=true}={}){
@@ -258,7 +332,7 @@
   function toggleSlotMagnet(slotId,color){
     if(!slotId || !MAGNET_COLORS.includes(color)) return;
     if(!state.magnets) state.magnets={};
-    if(!state.magnetNextNumber) state.magnetNextNumber={black:1,blue:1,red:1,yellow:1,green:1};
+    if(!state.magnetNextNumber) state.magnetNextNumber={black:1,blue:1,red:1,yellow:1,green:1,pink:1};
     const current=getMagnet(slotId);
     if(current?.color===color){
       state.magnets[slotId]='';
@@ -1097,6 +1171,7 @@
     canvas.height=height;
     const ctx=canvas.getContext('2d');
     const scale=width/760;
+    const boardScale=currentBoardScale();
     const corner=16*scale;
 
     ctx.save();
@@ -1133,16 +1208,16 @@
     ctx.ellipse(centre.x,centre.y,4.3*(width/100),4.3*(height/140),0,0,Math.PI*2);
     ctx.stroke();
 
-    const inputW=Math.round(122*scale);
-    const inputH=Math.round(34*scale);
-    const inputRadius=Math.round(7*scale);
-    const labelFont=Math.round(12*scale);
-    const playerFont=Math.round(11*scale);
-    const labelPadX=Math.round(7*scale);
-    const labelH=Math.round(22*scale);
-    const labelGap=Math.round(4*scale);
-    const magnetSize=Math.round(18*scale);
-    const magnetGap=Math.round(5*scale);
+    const inputW=Math.round(122*scale*boardScale);
+    const inputH=Math.round(34*scale*boardScale);
+    const inputRadius=Math.round(7*scale*boardScale);
+    const labelFont=Math.round(12*scale*boardScale);
+    const playerFont=Math.round(11*scale*boardScale);
+    const labelPadX=Math.round(7*scale*boardScale);
+    const labelH=Math.round(22*scale*boardScale);
+    const labelGap=Math.round(4*scale*boardScale);
+    const magnetSize=Math.round(18*scale*boardScale);
+    const magnetGap=Math.round(5*scale*boardScale);
     const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     const magnetColors={black:'#111827',blue:'#2563eb',red:'#dc2626',yellow:'#facc15',green:'#16a34a',pink:'#ec4899'};
 
@@ -1171,7 +1246,7 @@
         ctx.beginPath(); ctx.arc(mx,my,magnetSize/2,0,Math.PI*2);
         ctx.fillStyle=magnetColors[magnet.color] || '#111827'; ctx.fill();
         ctx.lineWidth=Math.max(2,2*scale); ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.stroke();
-        drawFittedText(ctx,String(magnet.number),mx,my,magnetSize-5*scale,Math.round(10*scale),'900','#ffffff');
+        drawFittedText(ctx,String(magnet.number),mx,my,magnetSize-5*scale*boardScale,Math.round(10*scale*boardScale),'900','#ffffff');
       }
 
       roundedRectPath(ctx,cx-inputW/2,cy-inputH/2,inputW,inputH,inputRadius);
@@ -1266,7 +1341,7 @@
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
-    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility();
+    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility(); renderBoardScaleControls();
   }
   function registerServiceWorker(){
     if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});
@@ -1277,6 +1352,9 @@
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
+    $('boardScaleDownBtn')?.addEventListener('click',()=>adjustBoardScale(-0.1));
+    $('boardScaleUpBtn')?.addEventListener('click',()=>adjustBoardScale(0.1));
+    $('boardScaleResetBtn')?.addEventListener('click',resetBoardScaleAuto);
     $('shareImageBtn')?.addEventListener('click',openBoardImageModal);
     $('shareGeneratedImageBtn')?.addEventListener('click',shareGeneratedBoardImage);
     $('saveGeneratedImageBtn')?.addEventListener('click',saveGeneratedBoardImage);
@@ -1303,6 +1381,7 @@
     ['sharePin','joinBoardPin'].forEach(id=>$(id).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,'').slice(0,4); }));
     syncAdapter.subscribe(mergeRemoteState);
     if(syncAdapter.onStatus) syncAdapter.onStatus(status=>{ shareStatus=status; renderShare(); });
+    window.addEventListener('resize',()=>{ if(boardScaleMode==='auto') renderBoardScaleControls(); });
     const connection=await syncAdapter.connect().catch(()=>null);
     if(connection?.expired && state.mode==='shared'){ state.mode='local'; state.boardId=null; saveState({publish:false}); renderShare(); }
     registerServiceWorker();
