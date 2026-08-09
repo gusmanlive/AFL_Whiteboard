@@ -45,6 +45,8 @@
       date:'', time:'', homeTeam:'', awayTeam:'', location:'',
       weatherLocation:'', latitude:null, longitude:null,
       temperature:'', weather:'', wind:'', rain:'', rainChance:'',
+      windSpeed:null, windDirection:null,
+      groundCondition:'', groundConditionNote:'',
       weatherComments:'', weatherUpdated:''
     };
   }
@@ -54,7 +56,7 @@
     POSITIONS.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     BENCH.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     return {
-      schemaVersion:3,
+      schemaVersion:4,
       boardId:null,
       mode:'local',
       details:defaultDetails(),
@@ -74,10 +76,10 @@
       return {
         ...base,
         ...parsed,
-        schemaVersion:3,
+        schemaVersion:4,
         details:{...base.details, ...(parsed.details || {})},
         assignments:{...base.assignments, ...(parsed.assignments || {})},
-        roster:Array.isArray(parsed.roster) ? parsed.roster.filter(Boolean) : []
+        roster:Array.isArray(parsed.roster) ? parsed.roster.filter(Boolean).map(cleanRosterPlayer) : []
       };
     }catch(err){
       console.warn('Could not load saved whiteboard state.', err);
@@ -104,6 +106,24 @@
     return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   }
   function normalizeNumber(value){ return String(value || '').trim().replace(/^#/,'').replace(/\s+/g,''); }
+  function stripRosterMarkers(value){
+    let name=String(value||'').replace(/ /g,' ').replace(/\s+/g,' ').trim();
+    // PlayHQ status markers are not relevant to a match whiteboard.
+    // Remove trailing captain / vice-captain / deputy vice-captain / season-permit tags.
+    let previous='';
+    while(name!==previous){
+      previous=name;
+      name=name.replace(/\s*\((?:c|vc|dvc|sp)\)\s*$/i,'').trim();
+    }
+    return name;
+  }
+  function cleanRosterPlayer(player){
+    if(!player || typeof player!=='object') return player;
+    const full=stripRosterMarkers([player.firstName,player.surname].filter(Boolean).join(' '));
+    const bits=full.split(/\s+/).filter(Boolean);
+    return {...player,firstName:bits.shift()||'',surname:bits.join(' ')};
+  }
+
   function playerDisplay(player){
     if(!player) return '';
     const name=[player.firstName,player.surname].filter(Boolean).join(' ').trim();
@@ -229,7 +249,7 @@
   }
   function renderTeamList(){
     const textarea=$('teamListInput');
-    if(document.activeElement !== textarea) textarea.value=state.teamListText || serializeRoster();
+    if(document.activeElement !== textarea) textarea.value=state.roster.length ? serializeRoster() : (state.teamListText || serializeRoster());
     $('rosterCount').textContent=`${activePlayers().length}/${MAX_PLAYERS} loaded`;
   }
   function setTeamListStatus(message,isError=false){
@@ -237,41 +257,78 @@
   }
 
   function parseTeamList(text){
-    const lines=String(text||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+    // Accept the app's normal #teamlist CSV format, a one-line numbered
+    // PlayHQ list, or copied lists where the number and name are on
+    // separate lines (including Markdown bullets/bold formatting).
+    const cleanLine=value=>String(value||'')
+      .replace(/\u00a0/g,' ')
+      .replace(/^\s*(?:[-*•–—]+)\s*/, '')
+      .replace(/\*\*/g,'')
+      .replace(/^\s*[-–—]\s*$/, '')
+      .trim()
+      .replace(/\s+/g,' ');
+    const source=String(text||'').split(/\r?\n/).map(cleanLine).filter(Boolean);
     const players=[];
     const skipped=[];
-    for(const raw of lines){
+    let pendingNumber='';
+
+    const splitName=name=>{
+      const cleaned=stripRosterMarkers(cleanLine(name).replace(/^[-:]+\s*/,'').trim());
+      if(!cleaned) return {firstName:'',surname:''};
+      const bits=cleaned.split(/\s+/);
+      return {firstName:bits.shift()||'',surname:bits.join(' ')};
+    };
+    const addPlayer=(number,nameOrFirst,surname='')=>{
+      number=normalizeNumber(number);
+      if(!/^\d+[a-z]?$/i.test(number)) return false;
+      let firstName='', lastName='';
+      if(surname){
+        const full=stripRosterMarkers([cleanLine(nameOrFirst),cleanLine(surname)].filter(Boolean).join(' '));
+        const bits=full.split(/\s+/).filter(Boolean); firstName=bits.shift()||''; lastName=bits.join(' ');
+      }
+      else ({firstName,surname:lastName}=splitName(nameOrFirst));
+      players.push({number,firstName,surname:lastName});
+      return true;
+    };
+
+    for(let i=0;i<source.length && players.length<MAX_PLAYERS;i++){
+      const raw=source[i];
       if(/^#?teamlist$/i.test(raw)) continue;
       if(/^(number|no\.?|player\s*number)[,\t ]/i.test(raw)) continue;
-      let number='', firstName='', surname='';
-      // CSV / TSV / semicolon format
+
+      // If the previous line was just a player number, the next text line
+      // is the player's name. This covers pasted lists such as:
+      // - **12**\n  Jack Campbell (vc)  // marker is removed when saved
+      if(pendingNumber){
+        if(!/^#?\d+[A-Za-z]?\s*[.)\-:]?$/.test(raw)){
+          if(addPlayer(pendingNumber,raw)){ pendingNumber=''; continue; }
+        }
+        pendingNumber='';
+      }
+
+      // CSV / TSV / semicolon: number,firstname,surname
       if(/[\t,;]/.test(raw)){
         const delimiter=raw.includes('\t')?'\t':raw.includes(',')?',':';';
-        const parts=raw.split(delimiter).map(s=>s.trim()).filter((s,i)=>i<3 || s);
-        number=normalizeNumber(parts[0]);
+        const parts=raw.split(delimiter).map(cleanLine);
+        const number=normalizeNumber(parts[0]);
         if(/^\d+[a-z]?$/i.test(number)){
-          firstName=parts[1]||'';
-          surname=parts.slice(2).join(' ').trim();
+          addPlayer(number,parts[1]||'',parts.slice(2).join(' ').trim());
+          continue;
         }
       }
-      // PlayHQ/plain text formats: 12 Jack Campbell / 12. Jack Campbell / #12 Jack Campbell
-      if(!number || !/^\d+[a-z]?$/i.test(number)){
-        const m=raw.match(/^#?([0-9]+[A-Za-z]?)\s*[.):-]?\s+(.+)$/);
-        if(m){
-          number=normalizeNumber(m[1]);
-          const name=m[2].trim().replace(/\s+/g,' ');
-          const bits=name.split(' ');
-          firstName=bits.shift()||'';
-          surname=bits.join(' ');
-        }else{
-          const only=raw.match(/^#?([0-9]+[A-Za-z]?)$/);
-          if(only) number=normalizeNumber(only[1]);
-        }
-      }
-      if(!number || !/^\d+[a-z]?$/i.test(number)){ skipped.push(raw); continue; }
-      players.push({ number, firstName, surname });
-      if(players.length>=MAX_PLAYERS) break;
+
+      // A number by itself. Remember it and pair with the next name line.
+      const only=raw.match(/^#?([0-9]+[A-Za-z]?)\s*[.)\-:]?$/);
+      if(only){ pendingNumber=normalizeNumber(only[1]); continue; }
+
+      // One-line numbered text: 12 Jack Campbell / 12. Jack Campbell / #12 Jack Campbell
+      const m=raw.match(/^#?([0-9]+[A-Za-z]?)\s*[.)\-:]?\s+(.+)$/);
+      if(m){ addPlayer(m[1],m[2]); continue; }
+
+      skipped.push(raw);
     }
+    if(pendingNumber) addPlayer(pendingNumber,'');
+
     const seen=new Set(), duplicates=new Set();
     players.forEach(p=>{ const n=p.number.toLowerCase(); if(seen.has(n)) duplicates.add(p.number); else seen.add(n); });
     if(duplicates.size) throw new Error(`Duplicate player number${duplicates.size>1?'s':''}: ${[...duplicates].join(', ')}`);
@@ -382,13 +439,33 @@
       state.details.temperature = Number.isFinite(max) ? `${Math.round(max)}°C max${Number.isFinite(min)?` / ${Math.round(min)}°C min`:''}` : '';
       state.details.weather = weatherCodeLabel(data.daily.weather_code?.[0]);
       state.details.wind = Number.isFinite(speed) ? `${windDirection(direction)} ${Math.round(speed)} km/h`.trim() : '';
+      state.details.windSpeed = Number.isFinite(speed) ? Number(speed) : null;
+      state.details.windDirection = Number.isFinite(direction) ? Number(direction) : null;
       state.details.rain = Number.isFinite(rain) ? `${Number(rain).toFixed(rain>=10?0:1)} mm` : '';
       state.details.rainChance = Number.isFinite(chance) ? `${Math.round(chance)}%` : '';
+      updateGroundCondition();
       state.details.weatherUpdated=new Date().toISOString();
       saveState(); renderWeatherSummary();
       setWeatherStatus(`Weather saved for ${formatDate(date)||date}. It remains available after the lookup.`);
       return true;
     }catch(error){ setWeatherStatus(`${error.message}. Forecasts may not be available far in advance; weather comments can still be entered manually.`,true); return false; }
+  }
+  function groundConditionEstimate(){
+    const rain=parseFloat(state.details.rain)||0;
+    const weather=(state.details.weather||'').toLowerCase();
+    let label='Dry / firm', note='Little rainfall is recorded in the saved weather.';
+    if(rain>=20){ label='Very wet / soft'; note='High rainfall may produce a soft or waterlogged surface.'; }
+    else if(rain>=8){ label='Wet'; note='Rainfall suggests a wet surface and reduced traction.'; }
+    else if(rain>=2 || /rain|shower|drizzle|storm/.test(weather)){ label='Damp / slippery'; note='Some moisture is likely on the surface.'; }
+    return {label,note};
+  }
+  function updateGroundCondition(){
+    if(!state.details.weather && !state.details.rain){
+      state.details.groundCondition=''; state.details.groundConditionNote=''; return;
+    }
+    const estimate=groundConditionEstimate();
+    state.details.groundCondition=estimate.label;
+    state.details.groundConditionNote=estimate.note;
   }
   function renderWeatherSummary(){
     const el=$('weatherSummary');
@@ -401,34 +478,69 @@
     if(state.details.weatherComments) parts.push(`Comment: ${state.details.weatherComments}`);
     el.hidden=!parts.length;
     el.innerHTML=parts.map(escapeHtml).join(' &nbsp;•&nbsp; ');
+
+    const ground=$('groundEstimate');
+    if(ground){
+      if(state.details.weather || state.details.rain){
+        updateGroundCondition();
+        ground.hidden=false;
+        $('groundEstimateLabel').textContent=state.details.groundCondition||'—';
+        $('groundEstimateNote').textContent=state.details.groundConditionNote||'';
+      }else{
+        ground.hidden=true;
+      }
+    }
   }
-  function groundConditionEstimate(){
-    const rain=parseFloat(state.details.rain)||0;
-    const weather=(state.details.weather||'').toLowerCase();
-    let label='Dry / firm', note='Little rainfall is recorded in the saved weather.';
-    if(rain>=20){ label='Very wet / soft', note='High rainfall may produce a soft or waterlogged surface.'; }
-    else if(rain>=8){ label='Wet', note='Rainfall suggests a wet surface and reduced traction.'; }
-    else if(rain>=2 || /rain|shower|drizzle|storm/.test(weather)){ label='Damp / slippery', note='Some moisture is likely on the surface.'; }
-    return {label,note};
+  function windDegreesFromText(value){
+    const label=(String(value||'').trim().split(/\s+/)[0]||'').toUpperCase();
+    const map={N:0,NNE:22.5,NE:45,ENE:67.5,E:90,ESE:112.5,SE:135,SSE:157.5,S:180,SSW:202.5,SW:225,WSW:247.5,W:270,WNW:292.5,NW:315,NNW:337.5};
+    return Object.prototype.hasOwnProperty.call(map,label)?map[label]:null;
   }
   async function viewGroundConditions(){
-    if(!state.details.weather && !state.details.rain){
-      const ok=await lookupWeather(); if(!ok) return;
+    // Open the tab immediately from the button click so browser pop-up
+    // protection does not block it while location/weather are being resolved.
+    const opened=window.open('about:blank','_blank');
+    if(!opened){
+      setWeatherStatus('Your browser blocked the Ground Conditions tab. Allow pop-ups for this site and try again.',true);
+      return;
     }
-    const estimate=groundConditionEstimate();
-    $('groundModalBody').innerHTML=`
-      <div class="ground-condition"><div><strong>${escapeHtml(estimate.label)}</strong><span>${escapeHtml(estimate.note)}</span></div></div>
-      <div class="ground-weather-grid">
-        <div><span>Location</span><strong>${escapeHtml(state.details.weatherLocation||'—')}</strong></div>
-        <div><span>Date</span><strong>${escapeHtml(formatDate(state.details.date || new Date().toISOString().slice(0,10)))}</strong></div>
-        <div><span>Weather</span><strong>${escapeHtml(state.details.weather||'—')}</strong></div>
-        <div><span>Temperature</span><strong>${escapeHtml(state.details.temperature||'—')}</strong></div>
-        <div><span>Rain</span><strong>${escapeHtml(state.details.rain||'—')} ${state.details.rainChance?`(${escapeHtml(state.details.rainChance)})`:''}</strong></div>
-        <div><span>Wind</span><strong>${escapeHtml(state.details.wind||'—')}</strong></div>
-      </div>`;
-    $('groundModal').hidden=false;
+    try{
+      opened.document.title='AFL Ground Conditions';
+      opened.document.body.innerHTML='<div style="font-family:system-ui;background:#07172c;color:white;min-height:100vh;margin:0;display:grid;place-items:center"><div style="text-align:center"><strong style="font-size:20px">AFL Ground Conditions</strong><div style="margin-top:8px;color:#b9c9dd">Loading map and wind conditions…</div></div></div>';
+    }catch(_){ /* The final page will replace this temporary content. */ }
+
+    let lat=Number(state.details.latitude), lon=Number(state.details.longitude);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)){
+      const ok=await lookupLocation();
+      if(!ok){ try{opened.close();}catch(_){} return; }
+      lat=Number(state.details.latitude); lon=Number(state.details.longitude);
+    }
+    if(!state.details.weather && !state.details.wind) await lookupWeather();
+
+    const rawWindDir=state.details.windDirection;
+    const windDir=(rawWindDir!==null && rawWindDir!=='' && Number.isFinite(Number(rawWindDir)))
+      ? Number(rawWindDir)
+      : windDegreesFromText(state.details.wind);
+    const rawWindSpeed=state.details.windSpeed;
+    let windSpeed=(rawWindSpeed!==null && rawWindSpeed!=='' && Number.isFinite(Number(rawWindSpeed))) ? Number(rawWindSpeed) : NaN;
+    if(!Number.isFinite(windSpeed)){
+      const m=String(state.details.wind||'').match(/([0-9]+(?:\.[0-9]+)?)\s*km\/h/i);
+      windSpeed=m?Number(m[1]):0;
+    }
+    const url=new URL('./ground.html',window.location.href);
+    const values={
+      lat:String(lat),lon:String(lon),
+      location:state.details.weatherLocation||state.details.location||'',
+      date:state.details.date||'',time:state.details.time||'',
+      home:state.details.homeTeam||'',away:state.details.awayTeam||'',
+      weather:state.details.weather||'',temperature:state.details.temperature||'',
+      rain:state.details.rain||'',rainChance:state.details.rainChance||'',
+      groundCondition:state.details.groundCondition||'',groundConditionNote:state.details.groundConditionNote||'',
+      wind:state.details.wind||'',windSpeed:String(windSpeed||0),windDirection:windDir===null?'':String(windDir)
+    };
+    Object.entries(values).forEach(([key,value])=>url.searchParams.set(key,value));
+    opened.location.href=url.toString();
   }
-  function closeGroundModal(){ $('groundModal').hidden=true; }
 
   function resetAll(){
     if(!confirm('Reset all match details, team list, weather and whiteboard positions?')) return;
@@ -457,9 +569,6 @@
     $('getGpsBtn').addEventListener('click',getGps);
     $('lookupWeatherBtn').addEventListener('click',lookupWeather);
     $('viewGroundBtn').addEventListener('click',viewGroundConditions);
-    $('closeGroundModal').addEventListener('click',closeGroundModal);
-    $('groundModal').addEventListener('click',event=>{ if(event.target===$('groundModal')) closeGroundModal(); });
-    document.addEventListener('keydown',event=>{ if(event.key==='Escape' && !$('groundModal').hidden) closeGroundModal(); });
     $('resetAllBtn').addEventListener('click',resetAll);
     syncAdapter.subscribe(mergeRemoteState);
     await syncAdapter.connect().catch(()=>null);

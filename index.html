@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.0.4</div>
+      <div class="version">Version 1.0.6</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -139,7 +139,7 @@
             </div>
           </div>
           <p class="helper team-list-help"><strong>Copy &amp; Paste a PlayHQ Line-Up here, OR enter manually using the #teamlist format (number,firstname,surname).</strong><br>
-          Maximum 50 players; player numbers must be unique. The saved list populates every player selector on the Whiteboard.</p>
+          Maximum 50 players; player numbers must be unique. You can also paste lists where each player number is on one line and the player name is on the next line. Captain/permit markers such as (c), (vc), (dvc) and (SP) are automatically removed. The saved list populates every player selector on the Whiteboard.</p>
           <textarea id="teamListInput" class="team-list-input" spellcheck="false" placeholder="#teamlist&#10;&#10;1,Firstname,Surname&#10;2,Firstname,Surname2&#10;3,Firstname,Surname3&#10;4,And,So-On"></textarea>
           <div class="team-list-actions">
             <button id="saveTeamListBtn" class="btn primary" type="button">Save Team List</button>
@@ -170,6 +170,16 @@
           </div>
 
           <div id="weatherSummary" class="weather-summary" hidden></div>
+
+          <section id="groundEstimate" class="ground-estimate-card" hidden aria-live="polite">
+            <div class="ground-estimate-heading">
+              <span class="eyebrow">GROUND SURFACE ESTIMATE</span>
+              <strong id="groundEstimateLabel">—</strong>
+            </div>
+            <p id="groundEstimateNote"></p>
+            <small>Estimate is based on saved weather and rainfall. Confirm the actual oval surface on arrival.</small>
+          </section>
+
           <div id="locationWeatherStatus" class="inline-status" role="status" aria-live="polite"></div>
 
           <label class="weather-comments-label">Weather comments
@@ -184,25 +194,12 @@
     </section>
   </main>
 
-  <div id="groundModal" class="modal-backdrop" hidden>
-    <section class="ground-modal" role="dialog" aria-modal="true" aria-labelledby="groundModalTitle">
-      <div class="ground-modal-head">
-        <div>
-          <span class="eyebrow">GROUND CONDITIONS</span>
-          <h2 id="groundModalTitle">Match-day ground estimate</h2>
-        </div>
-        <button id="closeGroundModal" class="icon-btn modal-close" type="button" aria-label="Close">×</button>
-      </div>
-      <div id="groundModalBody"></div>
-      <p class="ground-note">Ground condition is an estimate from recorded weather and rainfall only. Coaches should confirm the actual surface on arrival.</p>
-    </section>
-  </div>
 
   <datalist id="playerOptions"></datalist>
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.0.4</span>
+    <span>AFL Coaches Whiteboard • v1.0.6</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

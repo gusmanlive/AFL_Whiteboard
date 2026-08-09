@@ -1,6 +1,6 @@
 # AFL Coaches Whiteboard
 
-Version 1.0.4
+Version 1.0.6
 
 A local-first browser whiteboard for AFL coaches. This first version is deliberately backend-free so the Whiteboard and Setup workflow can be tested before adding shared Cloudflare boards.
 
@@ -66,7 +66,7 @@ That adapter can connect the browser to a Cloudflare Worker and a Durable Object
 
 ```js
 {
-  schemaVersion: 1,
+  schemaVersion: 4,
   boardId: null,
   mode: 'local',
   details: {
@@ -74,7 +74,13 @@ That adapter can connect the browser to a Cloudflare Worker and a Durable Object
     time: '',
     homeTeam: '',
     awayTeam: '',
-    location: ''
+    location: '',
+    weatherLocation: '',
+    latitude: null,
+    longitude: null,
+    temperature: '',
+    weather: '',
+    wind: ''
   },
   roster: [
     { id, number, firstName, surname }
@@ -104,9 +110,17 @@ Proposed next layer:
 Copyright © Gumball Spec – All rights reserved
 
 
-## Version 1.0.4
-- Match details are entered only on Setup and displayed read-only on Whiteboard.
-- Whiteboard information panel renamed Match Details.
-- Oval markings simplified to white perimeter, blue top 50m arc and red bottom 50m arc.
-- Replaced multi-field roster editor with paste-in PlayHQ / #teamlist team-list import (max 50).
-- Added Location & Weather setup card with location search, GPS, weather lookup, comments and ground-condition estimate.
+## Version 1.0.6
+- Ground Conditions opens in a dedicated new browser tab with a satellite/street map, match details, wind compass, wind speed and wind-direction overlays.
+- The Ground Conditions page refreshes hourly weather for the closest match time when online.
+- Team-list import accepts the normal `#teamlist` CSV format, one-line numbered lists, and copied two-line number/name lists including Markdown bullets/bold formatting.
+- Captain and vice-captain suffixes such as `(c)` and `(vc)` are retained in player names.
+- Match details remain Setup-only and display read-only on Whiteboard.
+- Oval retains white perimeter and centre markings, blue top 50m arc and red bottom 50m arc.
+- Location & Weather setup supports search, GPS, weather lookup, comments and Ground Conditions.
+
+
+## Version 1.0.6
+- Weather Lookup now displays a ground-surface estimate (Dry / firm, Damp / slippery, Wet, or Very wet / soft).
+- Ground estimate is saved with the weather result and is also shown on the detailed Ground Conditions map.
+- Team-list import removes PlayHQ status markers `(c)`, `(vc)`, `(dvc)` and `(SP)` from player names.
