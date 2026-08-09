@@ -58,12 +58,13 @@
     POSITIONS.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     BENCH.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     return {
-      schemaVersion:7,
+      schemaVersion:8,
       boardId:null,
       mode:'local',
       details:defaultDetails(),
       roster:[],
       teamListText:'',
+      boardTitle:'',
       notes:'',
       assignments,
       updatedAt:new Date().toISOString()
@@ -79,7 +80,7 @@
       return {
         ...base,
         ...parsed,
-        schemaVersion:7,
+        schemaVersion:8,
         details:{...base.details, ...(parsed.details || {})},
         assignments:{...base.assignments, ...(parsed.assignments || {})},
         roster:Array.isArray(parsed.roster) ? parsed.roster.filter(Boolean).map(cleanRosterPlayer) : []
@@ -248,10 +249,27 @@
     $('infoHome').textContent=state.details.homeTeam||'—';
     $('infoAway').textContent=state.details.awayTeam||'—';
     $('infoLocation').textContent=state.details.location||'—';
+    const heading=$('starting18Heading');
+    if(heading){
+      const home=String(state.details.homeTeam||'').trim();
+      const away=String(state.details.awayTeam||'').trim();
+      heading.textContent=(home||away) ? `Starting 18 - ${home||'Home Team'} VS ${away||'Away Team'}` : 'Starting 18';
+    }
+    const boardTitle=$('boardTitleInput');
+    if(boardTitle && document.activeElement!==boardTitle && boardTitle.value!==String(state.boardTitle||'')) boardTitle.value=String(state.boardTitle||'');
   }
   function renderNotes(){
     const el=$('boardNotes');
     if(el && el.value !== String(state.notes || '')) el.value=String(state.notes || '');
+  }
+
+  function bindBoardTitle(){
+    const el=$('boardTitleInput');
+    if(!el) return;
+    el.addEventListener('input',()=>{
+      state.boardTitle=el.value.slice(0,80);
+      saveState();
+    });
   }
 
   function bindNotes(){
@@ -853,7 +871,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', async()=>{
-    renderAll(); applyInviteFromUrl(); bindDetails(); bindNotes();
+    renderAll(); applyInviteFromUrl(); bindDetails(); bindBoardTitle(); bindNotes();
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));

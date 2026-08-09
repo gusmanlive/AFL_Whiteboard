@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.1.9</div>
+      <div class="version">Version 1.1.10</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -35,7 +35,7 @@
 
     <section id="whiteboard" class="tab-panel active">
       <div class="status-row">
-        <div>
+        <div class="board-status-block">
           <span class="eyebrow">BOARD STATUS</span>
           <span id="boardStatusPill" class="status-pill local">LOCAL BOARD</span>
         </div>
@@ -44,12 +44,12 @@
 
       <div class="whiteboard-layout">
         <section class="field-card card">
-          <div class="section-heading">
-            <div>
+          <div class="section-heading board-heading">
+            <div class="board-heading-main">
+              <input id="boardTitleInput" class="board-title-input" type="text" maxlength="80" placeholder="e.g. South Gawler U15, Q1" aria-label="Board title" />
               <span class="eyebrow">TEAM BOARD</span>
-              <h2>Starting 18</h2>
+              <h2 id="starting18Heading">Starting 18</h2>
             </div>
-            <p>Select from the Setup roster or type a name/role.</p>
           </div>
 
           <div class="field-notes-layout">
