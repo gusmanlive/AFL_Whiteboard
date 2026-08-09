@@ -13,21 +13,21 @@
     { id:'fp_left', role:'FP', label:'Forward Pocket', x:30, y:17 },
     { id:'ff', role:'FF', label:'Full Forward', x:50, y:14 },
     { id:'fp_right', role:'FP', label:'Forward Pocket', x:70, y:17 },
-    { id:'hff_left', role:'HFF', label:'Half Forward Flank', x:26, y:33 },
+    { id:'hff_left', role:'HFF', label:'Half Forward Flank', x:26, y:31.5 },
     { id:'chf', role:'CHF', label:'Centre Half Forward', x:50, y:31 },
-    { id:'hff_right', role:'HFF', label:'Half Forward Flank', x:74, y:33 },
+    { id:'hff_right', role:'HFF', label:'Half Forward Flank', x:74, y:31.5 },
     { id:'wing_left', role:'W', label:'Wing', x:22, y:50 },
     { id:'centre', role:'C', label:'Centre', x:39, y:43 },
     { id:'wing_right', role:'W', label:'Wing', x:78, y:50 },
     { id:'ruck', role:'RUCK', label:'Ruck', x:61, y:43 },
     { id:'ruck_rover', role:'RR', label:'Ruck Rover', x:39, y:56 },
     { id:'rover', role:'ROV', label:'Rover', x:61, y:56 },
-    { id:'hbf_left', role:'HBF', label:'Half Back Flank', x:23, y:73 },
-    { id:'chb', role:'CHB', label:'Centre Half Back', x:50, y:73 },
-    { id:'hbf_right', role:'HBF', label:'Half Back Flank', x:77, y:73 },
-    { id:'bp_left', role:'BP', label:'Back Pocket', x:26, y:87 },
-    { id:'fb', role:'FB', label:'Full Back', x:50, y:91 },
-    { id:'bp_right', role:'BP', label:'Back Pocket', x:74, y:87 }
+    { id:'hbf_left', role:'HBF', label:'Half Back Flank', x:23, y:71.5 },
+    { id:'chb', role:'CHB', label:'Centre Half Back', x:50, y:70 },
+    { id:'hbf_right', role:'HBF', label:'Half Back Flank', x:77, y:71.5 },
+    { id:'bp_left', role:'BP', label:'Back Pocket', x:26, y:84 },
+    { id:'fb', role:'FB', label:'Full Back', x:50, y:89.5 },
+    { id:'bp_right', role:'BP', label:'Back Pocket', x:74, y:84 }
   ];
 
   function benchSlots(count=DEFAULT_BENCH_COUNT){
