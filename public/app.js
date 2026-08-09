@@ -1190,6 +1190,15 @@
     return assignmentDisplay(state.assignments[positionId]);
   }
 
+  function currentInterchangePlayers(){
+    return benchSlots(state.benchCount)
+      .map(slot=>{
+        const input=$(`bench_${slot.id}`);
+        return String(input ? (input.value||'') : assignmentDisplay(state.assignments[slot.id])).trim();
+      })
+      .filter(Boolean);
+  }
+
   function renderOvalToCanvas(){
     const width=1200;
     const height=Math.round(width/0.72);
@@ -1281,6 +1290,34 @@
       ctx.lineWidth=Math.max(1,scale); ctx.strokeStyle='rgba(255,255,255,0.92)'; ctx.stroke();
       drawFittedText(ctx,playerText,cx,cy,inputW-14*scale,playerFont,'700','#0b1728');
     });
+
+
+    // Screenshot-only interchange strip. Keep it to one line at the bottom of the oval.
+    // The font follows the user's last selected board font scale; no on-screen controls are drawn.
+    const interchangePlayers=currentInterchangePlayers();
+    if(interchangePlayers.length){
+      const stripX=Math.round(34*scale);
+      const stripH=Math.round(38*scale*(1 + ((boardScale-1)*0.35)));
+      const stripY=height-stripH-Math.round(18*scale);
+      const stripW=width-(stripX*2);
+      roundedRectPath(ctx,stripX,stripY,stripW,stripH,Math.round(9*scale));
+      ctx.fillStyle='rgba(255,255,255,0.94)';
+      ctx.fill();
+      ctx.lineWidth=Math.max(1,scale);
+      ctx.strokeStyle='rgba(6,18,33,0.20)';
+      ctx.stroke();
+      const interchangeText=`INTERCHANGE: ${interchangePlayers.join('  •  ')}`;
+      drawFittedText(
+        ctx,
+        interchangeText,
+        width/2,
+        stripY+(stripH/2),
+        stripW-Math.round(24*scale),
+        Math.round(13*scale*boardScale),
+        '800',
+        '#0b1728'
+      );
+    }
 
     return canvas;
   }
