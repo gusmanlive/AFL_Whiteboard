@@ -1,0 +1,9 @@
+AFL Coaches Whiteboard v1.1.1 deployment check
+
+1. package.json starts with: {
+2. src/worker.js starts with: import { DurableObject } from "cloudflare:workers";
+3. wrangler.jsonc exists at repository root.
+4. public/index.html exists.
+5. Cloudflare project type is Workers (not Pages-only).
+6. Build command can be blank.
+7. Deploy command: npx wrangler deploy

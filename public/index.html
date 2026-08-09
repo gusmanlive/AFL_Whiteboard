@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07172c" />
+  <title>AFL Coaches Whiteboard</title>
+  <link rel="icon" type="image/png" href="afl-whiteboard-logo.png" />
+  <link rel="apple-touch-icon" href="afl-whiteboard-logo.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-wrap">
+      <div class="brand-mark">
+        <img src="afl-whiteboard-logo.png" alt="AFL Whiteboard logo" />
+      </div>
+      <div>
+        <h1>AFL COACHES WHITEBOARD</h1>
+        <p>Gumball Spec • All rights reserved</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="version">Version 1.1.1</div>
+      <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <nav class="tabs" aria-label="Application tabs">
+      <button class="tab active" type="button" data-tab="whiteboard">Whiteboard</button>
+      <button class="tab" type="button" data-tab="setup">Setup</button>
+    </nav>
+
+    <section id="whiteboard" class="tab-panel active">
+      <div class="status-row">
+        <div>
+          <span class="eyebrow">BOARD STATUS</span>
+          <span id="boardStatusPill" class="status-pill local">LOCAL BOARD</span>
+        </div>
+        <div class="autosave">Autosaves on this device</div>
+      </div>
+
+      <div class="whiteboard-layout">
+        <section class="field-card card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">TEAM BOARD</span>
+              <h2>Starting 18</h2>
+            </div>
+            <p>Select from the Setup roster or type a name/role.</p>
+          </div>
+
+          <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
+            <svg class="field-markings" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+              <ellipse cx="50" cy="70" rx="43" ry="58" class="field-outline" />
+              <path d="M 21 34 Q 50 61 79 34" class="field-arc field-arc-top" />
+              <path d="M 21 106 Q 50 79 79 106" class="field-arc field-arc-bottom" />
+              <rect x="31" y="57" width="38" height="26" class="field-square" />
+              <circle cx="50" cy="70" r="4.3" class="field-circle" />
+            </svg>
+            <div id="positionLayer"></div>
+          </div>
+
+          <div class="bench-wrap">
+            <div class="section-heading bench-heading">
+              <div>
+                <span class="eyebrow">INTERCHANGE</span>
+                <h2>Bench</h2>
+              </div>
+              <span class="bench-count">4 positions</span>
+            </div>
+            <div id="benchGrid" class="bench-grid"></div>
+          </div>
+        </section>
+
+        <aside class="info-card card">
+          <div class="section-heading compact">
+            <div>
+              <span class="eyebrow">MATCH</span>
+              <h2>Match Details</h2>
+            </div>
+          </div>
+          <dl class="match-info">
+            <div><dt>Date</dt><dd id="infoDate">—</dd></div>
+            <div><dt>Time</dt><dd id="infoTime">—</dd></div>
+            <div><dt>Home Team</dt><dd id="infoHome">—</dd></div>
+            <div><dt>Away Team</dt><dd id="infoAway">—</dd></div>
+            <div><dt>Location</dt><dd id="infoLocation">—</dd></div>
+          </dl>
+          <button id="editSetupBtn" class="btn primary full" type="button">Edit Setup</button>
+
+          <div class="sharing-preview">
+            <span class="eyebrow">SHARED BOARD</span>
+
+            <div id="shareLocalPanel">
+              <h3>Share with coaches</h3>
+              <p>Create a live board or join one from another device. Shared boards are automatically deleted after <strong>30 days without activity</strong>.</p>
+              <label class="share-label" for="sharePin">Coach PIN</label>
+              <input id="sharePin" class="share-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="4 digits" />
+              <button id="createBoardBtn" class="btn primary full share-action" type="button">Create Board</button>
+              <div class="share-divider"><span>or join</span></div>
+              <label class="share-label" for="joinBoardCode">Board Code</label>
+              <input id="joinBoardCode" class="share-input board-code-input" type="text" maxlength="6" autocomplete="off" placeholder="ABC123" />
+              <label class="share-label" for="joinBoardPin">Coach PIN</label>
+              <input id="joinBoardPin" class="share-input" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 digits" />
+              <button id="joinBoardBtn" class="btn secondary full share-action" type="button">Join Board</button>
+            </div>
+
+            <div id="shareActivePanel" class="share-active" hidden>
+              <div class="share-live-row">
+                <span id="shareLiveDot" class="share-live-dot"></span>
+                <strong id="shareConnectionLabel">Connecting…</strong>
+              </div>
+              <div class="share-code-card">
+                <span>BOARD CODE</span>
+                <strong id="activeBoardCode">------</strong>
+              </div>
+              <div id="connectedCoachCount" class="share-coaches">1 coach connected</div>
+              <button id="copyBoardCodeBtn" class="btn primary full share-action" type="button">Copy Board Code</button>
+              <button id="leaveBoardBtn" class="btn secondary full share-action" type="button">Leave Shared Board</button>
+              <p class="share-retention">30-day retention resets whenever the board is accessed or edited.</p>
+            </div>
+
+            <div id="shareStatusMessage" class="share-status" role="status"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="setup" class="tab-panel">
+      <div class="setup-grid">
+        <section class="card setup-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">MATCH SETUP</span>
+              <h2>Match Details</h2>
+            </div>
+            <p>Enter match details here. The Whiteboard tab only displays these values.</p>
+          </div>
+
+          <div class="form-grid">
+            <label>Date
+              <input id="matchDate" type="date" autocomplete="off" />
+            </label>
+            <label>Time
+              <input id="matchTime" type="time" autocomplete="off" />
+            </label>
+            <label>Home Team
+              <input id="homeTeam" type="text" placeholder="e.g. South Gawler" autocomplete="off" />
+            </label>
+            <label>Away Team
+              <input id="awayTeam" type="text" placeholder="e.g. Gawler Central" autocomplete="off" />
+            </label>
+            <label class="wide">Location
+              <input id="location" type="text" placeholder="e.g. South Gawler Oval" autocomplete="off" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card team-list-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">TEAM LIST</span>
+              <h2>Player List</h2>
+            </div>
+          </div>
+          <p class="helper team-list-help"><strong>Copy &amp; Paste a PlayHQ Line-Up here, OR enter manually using the #teamlist format (number,firstname,surname).</strong><br>
+          Maximum 50 players; player numbers must be unique. You can also paste lists where each player number is on one line and the player name is on the next line. Captain/permit markers such as (c), (vc), (dvc) and (SP) are automatically removed. The saved list populates every player selector on the Whiteboard.</p>
+          <textarea id="teamListInput" class="team-list-input" spellcheck="false" placeholder="#teamlist&#10;&#10;1,Firstname,Surname&#10;2,Firstname,Surname2&#10;3,Firstname,Surname3&#10;4,And,So-On"></textarea>
+          <div class="team-list-actions">
+            <button id="saveTeamListBtn" class="btn primary" type="button">Save Team List</button>
+            <button id="clearRosterBtn" class="btn secondary" type="button">Clear Team List</button>
+            <span id="rosterCount">0/50 loaded</span>
+          </div>
+          <div id="teamListStatus" class="inline-status" role="status" aria-live="polite"></div>
+        </section>
+
+        <section class="card weather-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">LOCATION &amp; WEATHER</span>
+              <h2>📍 Location &amp; Weather</h2>
+            </div>
+          </div>
+          <p class="helper weather-help">Match Location above remains a free-text board field and is not used for weather. Enter a separate location below, or leave it blank and use GPS. Weather uses the match date; when date is blank it uses today.</p>
+
+          <label class="weather-location-label">Location
+            <input id="weatherLocation" type="text" placeholder="e.g. Gawler, South Australia" autocomplete="off" />
+          </label>
+
+          <div class="weather-actions">
+            <button id="lookupLocationBtn" class="btn secondary" type="button">🔎 Lookup Location</button>
+            <button id="getGpsBtn" class="btn secondary" type="button">📌 Get GPS</button>
+            <button id="lookupWeatherBtn" class="btn primary" type="button">☁ Lookup Weather</button>
+            <button id="viewGroundBtn" class="btn dark" type="button">🛠 View Ground Conditions</button>
+          </div>
+
+          <div id="weatherSummary" class="weather-summary" hidden></div>
+
+          <section id="groundEstimate" class="ground-estimate-card" hidden aria-live="polite">
+            <div class="ground-estimate-heading">
+              <span class="eyebrow">GROUND SURFACE ESTIMATE</span>
+              <strong id="groundEstimateLabel">—</strong>
+            </div>
+            <div class="ground-rain-metrics">
+              <div><span>Previous 72 hrs rain</span><strong id="previous72RainText">—</strong></div>
+              <div><span>Match-day rain</span><strong id="matchDayRainText">—</strong></div>
+            </div>
+            <p id="groundEstimateNote"></p>
+            <small>Estimate uses recent rainfall and match-day weather. Drainage, soil, irrigation, grass coverage and prior use can change actual conditions.</small>
+          </section>
+
+          <div id="locationWeatherStatus" class="inline-status" role="status" aria-live="polite"></div>
+
+          <label class="weather-comments-label">Weather comments
+            <input id="weatherComments" type="text" placeholder="comment on weather" autocomplete="off" />
+          </label>
+        </section>
+
+        <div class="setup-footer-actions">
+          <button id="goWhiteboardBtn" class="btn primary" type="button">Open Whiteboard</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+
+  <datalist id="playerOptions"></datalist>
+
+  <footer>
+    <span>© Gumball Spec – All rights reserved</span>
+    <span>AFL Coaches Whiteboard • v1.1.1</span>
+  </footer>
+
+  <script src="sync-adapter.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
