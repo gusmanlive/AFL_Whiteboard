@@ -47,6 +47,7 @@
       temperature:'', weather:'', wind:'', rain:'', rainChance:'',
       windSpeed:null, windDirection:null,
       groundCondition:'', groundConditionNote:'',
+      previous72Rain:null, previous72RainDays:[], previous72RainSource:'',
       weatherComments:'', weatherUpdated:''
     };
   }
@@ -56,7 +57,7 @@
     POSITIONS.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     BENCH.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     return {
-      schemaVersion:4,
+      schemaVersion:5,
       boardId:null,
       mode:'local',
       details:defaultDetails(),
@@ -76,7 +77,7 @@
       return {
         ...base,
         ...parsed,
-        schemaVersion:4,
+        schemaVersion:5,
         details:{...base.details, ...(parsed.details || {})},
         assignments:{...base.assignments, ...(parsed.assignments || {})},
         roster:Array.isArray(parsed.roster) ? parsed.roster.filter(Boolean).map(cleanRosterPlayer) : []
@@ -126,10 +127,13 @@
 
   function playerDisplay(player){
     if(!player) return '';
-    const name=[player.firstName,player.surname].filter(Boolean).join(' ').trim();
-    if(player.number && name) return `#${player.number} ${name}`;
+    const first=String(player.firstName || '').trim();
+    const surname=String(player.surname || '').trim();
+    const surnameInitial=surname ? surname.charAt(0).toUpperCase() : '';
+    const shortName=[first,surnameInitial].filter(Boolean).join(' ').trim();
+    if(player.number && shortName) return `#${player.number} ${shortName}`;
     if(player.number) return `#${player.number}`;
-    return name;
+    return shortName;
   }
   function activePlayers(){ return state.roster.filter(p => playerDisplay(p)); }
   function rosterById(id){ return state.roster.find(p => p.id === id); }
@@ -415,6 +419,40 @@
       setWeatherStatus(`${message} You can still search or enter the location manually.`,true);
     },{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
   }
+  function dateOffset(dateString, days){
+    const [y,m,d]=String(dateString).split('-').map(Number);
+    const dt=new Date(Date.UTC(y,m-1,d+days));
+    return dt.toISOString().slice(0,10);
+  }
+  function localTodayString(){
+    const now=new Date();
+    const y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'), d=String(now.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  async function fetchRainForDay(lat,lon,date){
+    const historical=date < localTodayString();
+    const base=historical?'https://archive-api.open-meteo.com/v1/archive':'https://api.open-meteo.com/v1/forecast';
+    const params=new URLSearchParams({latitude:String(lat),longitude:String(lon),start_date:date,end_date:date,daily:'precipitation_sum',timezone:'auto'});
+    const response=await fetch(`${base}?${params}`);
+    if(!response.ok) throw new Error(`Rainfall history lookup failed for ${date}`);
+    const data=await response.json();
+    const value=Number(data.daily?.precipitation_sum?.[0]);
+    return {date,rain:Number.isFinite(value)?value:0,source:historical?'observed/historical':'forecast'};
+  }
+  async function fetchPrevious72Rain(lat,lon,matchDate){
+    const dates=[dateOffset(matchDate,-3),dateOffset(matchDate,-2),dateOffset(matchDate,-1)];
+    const days=[];
+    for(const date of dates){
+      try{ days.push(await fetchRainForDay(lat,lon,date)); }
+      catch(_){ days.push({date,rain:0,source:'unavailable'}); }
+    }
+    const available=days.filter(d=>d.source!=='unavailable');
+    const total=available.reduce((sum,d)=>sum+d.rain,0);
+    state.details.previous72Rain=available.length?Number(total.toFixed(1)):null;
+    state.details.previous72RainDays=days;
+    const sources=[...new Set(available.map(d=>d.source))];
+    state.details.previous72RainSource=sources.join(' + ');
+  }
   async function lookupWeather(){
     let lat=Number(state.details.latitude), lon=Number(state.details.longitude);
     if(!Number.isFinite(lat)||!Number.isFinite(lon)){
@@ -443,6 +481,7 @@
       state.details.windDirection = Number.isFinite(direction) ? Number(direction) : null;
       state.details.rain = Number.isFinite(rain) ? `${Number(rain).toFixed(rain>=10?0:1)} mm` : '';
       state.details.rainChance = Number.isFinite(chance) ? `${Math.round(chance)}%` : '';
+      await fetchPrevious72Rain(lat,lon,date);
       updateGroundCondition();
       state.details.weatherUpdated=new Date().toISOString();
       saveState(); renderWeatherSummary();
@@ -451,13 +490,30 @@
     }catch(error){ setWeatherStatus(`${error.message}. Forecasts may not be available far in advance; weather comments can still be entered manually.`,true); return false; }
   }
   function groundConditionEstimate(){
-    const rain=parseFloat(state.details.rain)||0;
+    const previous=Number(state.details.previous72Rain);
+    const prev=Number.isFinite(previous)?previous:0;
+    const matchRain=parseFloat(state.details.rain)||0;
     const weather=(state.details.weather||'').toLowerCase();
-    let label='Dry / firm', note='Little rainfall is recorded in the saved weather.';
-    if(rain>=20){ label='Very wet / soft'; note='High rainfall may produce a soft or waterlogged surface.'; }
-    else if(rain>=8){ label='Wet'; note='Rainfall suggests a wet surface and reduced traction.'; }
-    else if(rain>=2 || /rain|shower|drizzle|storm/.test(weather)){ label='Damp / slippery'; note='Some moisture is likely on the surface.'; }
-    return {label,note};
+    const labels=['Dry / firm','Damp','Wet / slippery','Wet / soft','Very wet / muddy'];
+    let level=prev>40?4:prev>25?3:prev>10?2:prev>2?1:0;
+    if(matchRain>=15) level+=2;
+    else if(matchRain>=5) level+=1;
+    else if(matchRain>=2 && level===0) level=1;
+    if(/heavy rain|heavy showers|thunderstorm/.test(weather)) level=Math.max(level,2);
+    else if(/rain|shower|drizzle/.test(weather)) level=Math.max(level,1);
+    level=Math.min(4,level);
+    const label=labels[level];
+    const prevText=Number.isFinite(previous)?`${previous.toFixed(previous>=10?0:1)} mm`:'unavailable';
+    const matchText=`${matchRain.toFixed(matchRain>=10?0:1)} mm`;
+    const notes=[
+      `Previous 72-hour rainfall: ${prevText}. Match-day rainfall: ${matchText}.`,
+      level===0?'Recent rainfall is low, so a generally firm surface is more likely.':
+      level===1?'Moisture may make parts of the oval damp or slippery.':
+      level===2?'Recent and/or match-day rain increases the likelihood of a wet, slippery surface.':
+      level===3?'Rainfall levels increase the likelihood of a soft surface and muddy high-traffic areas.':
+      'Heavy recent rainfall creates an elevated likelihood of very soft, muddy or locally waterlogged areas.'
+    ];
+    return {label,note:notes.join(' ')};
   }
   function updateGroundCondition(){
     if(!state.details.weather && !state.details.rain){
@@ -474,7 +530,8 @@
     if(state.details.temperature) parts.push(state.details.temperature);
     if(state.details.weather) parts.push(state.details.weather);
     if(state.details.wind) parts.push(`Wind ${state.details.wind}`);
-    if(state.details.rain) parts.push(`Rain ${state.details.rain}${state.details.rainChance?` (${state.details.rainChance})`:''}`);
+    if(state.details.rain) parts.push(`Match-day rain ${state.details.rain}${state.details.rainChance?` (${state.details.rainChance})`:''}`);
+    if(Number.isFinite(Number(state.details.previous72Rain))) parts.push(`Previous 72 hrs ${Number(state.details.previous72Rain).toFixed(Number(state.details.previous72Rain)>=10?0:1)} mm`);
     if(state.details.weatherComments) parts.push(`Comment: ${state.details.weatherComments}`);
     el.hidden=!parts.length;
     el.innerHTML=parts.map(escapeHtml).join(' &nbsp;•&nbsp; ');
@@ -486,6 +543,8 @@
         ground.hidden=false;
         $('groundEstimateLabel').textContent=state.details.groundCondition||'—';
         $('groundEstimateNote').textContent=state.details.groundConditionNote||'';
+        if($('previous72RainText')) $('previous72RainText').textContent=Number.isFinite(Number(state.details.previous72Rain))?`${Number(state.details.previous72Rain).toFixed(Number(state.details.previous72Rain)>=10?0:1)} mm`:'Unavailable';
+        if($('matchDayRainText')) $('matchDayRainText').textContent=state.details.rain||'0 mm';
       }else{
         ground.hidden=true;
       }
@@ -535,6 +594,7 @@
       home:state.details.homeTeam||'',away:state.details.awayTeam||'',
       weather:state.details.weather||'',temperature:state.details.temperature||'',
       rain:state.details.rain||'',rainChance:state.details.rainChance||'',
+      previous72Rain:Number.isFinite(Number(state.details.previous72Rain))?String(state.details.previous72Rain):'',
       groundCondition:state.details.groundCondition||'',groundConditionNote:state.details.groundConditionNote||'',
       wind:state.details.wind||'',windSpeed:String(windSpeed||0),windDirection:windDir===null?'':String(windDir)
     };

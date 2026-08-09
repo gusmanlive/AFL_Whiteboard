@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.0.6</div>
+      <div class="version">Version 1.0.8</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -176,8 +176,12 @@
               <span class="eyebrow">GROUND SURFACE ESTIMATE</span>
               <strong id="groundEstimateLabel">—</strong>
             </div>
+            <div class="ground-rain-metrics">
+              <div><span>Previous 72 hrs rain</span><strong id="previous72RainText">—</strong></div>
+              <div><span>Match-day rain</span><strong id="matchDayRainText">—</strong></div>
+            </div>
             <p id="groundEstimateNote"></p>
-            <small>Estimate is based on saved weather and rainfall. Confirm the actual oval surface on arrival.</small>
+            <small>Estimate uses recent rainfall and match-day weather. Drainage, soil, irrigation, grass coverage and prior use can change actual conditions.</small>
           </section>
 
           <div id="locationWeatherStatus" class="inline-status" role="status" aria-live="polite"></div>
@@ -199,7 +203,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.0.6</span>
+    <span>AFL Coaches Whiteboard • v1.0.8</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

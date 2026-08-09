@@ -138,7 +138,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 
 .position-node {
   position: absolute; transform: translate(-50%,-50%);
-  width: clamp(96px, 16.5%, 138px);
+  width: clamp(115px, 19.8%, 166px);
   z-index: 2;
 }
 .position-role {
@@ -245,7 +245,7 @@ footer {
   .section-heading { display:block; }
   .section-heading p { text-align:left; margin-top:5px; }
   .oval { min-height: 0; aspect-ratio: .72 / 1; max-width: 100%; border-radius: 14px; }
-  .position-node { width: clamp(78px, 20%, 105px); }
+  .position-node { width: clamp(94px, 24%, 126px); }
   .position-role { font-size:8px; padding:1px 5px; }
   .position-input { height:29px; font-size:9px; padding:4px; }
   .bench-grid { grid-template-columns: repeat(2,1fr); }
@@ -260,9 +260,10 @@ footer {
 }
 
 @media (max-width: 430px) {
+  .ground-rain-metrics { grid-template-columns:1fr; }
   .app-header h1 { font-size:17px; }
   .oval { aspect-ratio: .72 / 1; }
-  .position-node { width: 22%; }
+  .position-node { width: 26.4%; }
   .position-input { font-size:8px; }
   .bench-grid { grid-template-columns:1fr 1fr; }
   .match-info { grid-template-columns:1fr; }
@@ -301,6 +302,11 @@ footer {
 
 
 /* v1.0.6 ground-surface estimate shown with Weather Lookup */
+
+.ground-rain-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:10px 0 8px; }
+.ground-rain-metrics > div { padding:8px 10px; border:1px solid #dbe4ee; border-radius:9px; background:#fff; }
+.ground-rain-metrics span { display:block; color:var(--muted); font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; }
+.ground-rain-metrics strong { display:block; margin-top:3px; color:var(--navy-900); font-size:14px; }
 .ground-estimate-card {
   margin-top: 10px;
   padding: 13px 14px;
