@@ -1260,14 +1260,14 @@
     const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     const magnetColors={black:'#111827',blue:'#2563eb',red:'#dc2626',yellow:'#facc15',green:'#16a34a',pink:'#ec4899'};
 
-    // Top centred board title overlay for screenshot, matching the current board title.
+    // Top-left board title overlay for screenshot, matching the current board title.
     if(screenshotTitle){
       const titleFont=Math.round(18*scale*Math.max(1,boardScale*0.95));
       ctx.font=`800 ${titleFont}px ${family}`;
       const titlePadX=Math.round(14*scale);
       const titleH=Math.round(34*scale);
       const titleW=Math.min(width - Math.round(110*scale), Math.ceil(ctx.measureText(screenshotTitle).width + titlePadX*2));
-      const titleX=(width-titleW)/2;
+      const titleX=Math.round(18*scale);
       const titleY=Math.round(18*scale);
       roundedRectPath(ctx,titleX,titleY,titleW,titleH,titleH/2);
       ctx.fillStyle='rgba(6,18,33,0.82)';
@@ -1315,12 +1315,9 @@
     // The font and magnet sizes follow the user's last selected board font scale; no UI controls are drawn.
     const interchangePlayers=currentInterchangePlayers();
     const footerPadBottom=Math.round(16*scale);
-    const footerLineGap=Math.round(6*scale);
-    const footerFontSmall=Math.round(12*scale);
-    const footerFontLarge=Math.round(12*scale);
-    const footerTotalH=(footerFontSmall + footerFontLarge + footerLineGap);
+    const footerFont=Math.round(12*scale);
     const footerBaseY=height-footerPadBottom;
-    const benchReservedBottom=footerTotalH + Math.round(18*scale);
+    const benchReservedBottom=footerFont + Math.round(26*scale);
 
     if(interchangePlayers.length){
       const sideMargin=Math.round(34*scale);
@@ -1371,9 +1368,15 @@
       });
     }
 
-    // Bottom footer overlay, similar to the app whiteboard footer.
-    drawFittedText(ctx,'© Gumball Spec – All rights reserved',width/2,footerBaseY-footerFontLarge-footerLineGap,Math.round(width*0.92),footerFontSmall,'700','#ffffff');
-    drawFittedText(ctx,`AFL Coaches Whiteboard • ${screenshotVersion}`,width/2,footerBaseY,Math.round(width*0.92),footerFontLarge,'700','#ffffff');
+    // Bottom footer overlay on a single line, matching the app footer feel.
+    ctx.textAlign='left';
+    ctx.textBaseline='middle';
+    ctx.fillStyle='#ffffff';
+    ctx.font=`700 ${footerFont}px ${family}`;
+    ctx.fillText('© Gumball Spec – All rights reserved', Math.round(18*scale), footerBaseY);
+    ctx.textAlign='right';
+    ctx.fillText(`AFL Coaches Whiteboard • ${screenshotVersion}`, width - Math.round(18*scale), footerBaseY);
+    ctx.textAlign='center';
 
     return canvas;
   }
