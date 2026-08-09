@@ -120,6 +120,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   display: flex;
   flex-direction: column;
 }
+.board-notes[hidden] { display: none !important; }
 .board-notes-heading { margin-bottom: 9px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
 .board-notes-heading h3 { margin: 3px 0 0; color: var(--navy-900); font-size: 18px; }
 .board-notes textarea {
@@ -327,10 +328,10 @@ footer {
   .status-row { align-items:flex-start; }
   .autosave { text-align:right; }
   .field-card, .info-card, .setup-card, .roster-card { padding:12px; border-radius:12px; }
-  .field-notes-layout { grid-template-columns: 1fr; }
-  .field-notes-layout.notes-hidden { grid-template-columns: 1fr; }
-  .board-notes { min-height: 180px; }
-  .board-notes textarea { min-height: 130px; }
+  .field-notes-layout { grid-template-columns: minmax(0, 5fr) minmax(150px, 2fr); gap: 3px; align-items: stretch; }
+  .field-notes-layout.notes-hidden { grid-template-columns: minmax(0, 1fr); }
+  .board-notes { min-height: 0; }
+  .board-notes textarea { min-height: 280px; }
   .section-heading { display:block; }
   .section-heading p { text-align:left; margin-top:5px; }
   .oval { min-height: 0; aspect-ratio: .72 / 1; max-width: 100%; border-radius: 14px; }

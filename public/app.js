@@ -97,8 +97,8 @@
   function loadNotesVisible(){
     try{
       const saved=localStorage.getItem(NOTES_VISIBILITY_KEY);
-      return saved === null ? true : saved !== 'false';
-    }catch(_){ return true; }
+      return saved === null ? false : saved === 'true';
+    }catch(_){ return false; }
   }
   let notesVisible=loadNotesVisible();
 

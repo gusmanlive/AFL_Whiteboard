@@ -1,8 +1,14 @@
-# AFL Coaches Whiteboard v1.1.8
+# AFL Coaches Whiteboard v1.1.9
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
 
-## New in v1.1.8
+## New in v1.1.9
+
+- Notes are hidden by default.
+- Notes toggle fully removes/restores the panel.
+- Notes remain to the right of the oval when visible, with a 3px gap.
+
+## Previous v1.1.8 changes
 
 - Doubled the Whiteboard Coach Notes panel width and reduced the gap between the oval and Notes panel.
 
