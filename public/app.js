@@ -1210,6 +1210,8 @@
     const scale=width/760;
     const boardScale=currentBoardScale();
     const corner=16*scale;
+    const screenshotTitle=String(state.boardTitle || '').trim();
+    const screenshotVersion='v1.4.0';
 
     ctx.save();
     roundedRectPath(ctx,0,0,width,height,corner);
@@ -1258,6 +1260,21 @@
     const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     const magnetColors={black:'#111827',blue:'#2563eb',red:'#dc2626',yellow:'#facc15',green:'#16a34a',pink:'#ec4899'};
 
+    // Top centred board title overlay for screenshot, matching the current board title.
+    if(screenshotTitle){
+      const titleFont=Math.round(18*scale*Math.max(1,boardScale*0.95));
+      ctx.font=`800 ${titleFont}px ${family}`;
+      const titlePadX=Math.round(14*scale);
+      const titleH=Math.round(34*scale);
+      const titleW=Math.min(width - Math.round(110*scale), Math.ceil(ctx.measureText(screenshotTitle).width + titlePadX*2));
+      const titleX=(width-titleW)/2;
+      const titleY=Math.round(18*scale);
+      roundedRectPath(ctx,titleX,titleY,titleW,titleH,titleH/2);
+      ctx.fillStyle='rgba(6,18,33,0.82)';
+      ctx.fill();
+      drawFittedText(ctx,screenshotTitle,titleX+titleW/2,titleY+titleH/2,titleW-titlePadX*2,titleFont,'800','#ffffff');
+    }
+
     POSITIONS.forEach(pos=>{
       const cx=(pos.x/100)*width;
       const cy=(pos.y/100)*height;
@@ -1297,12 +1314,20 @@
     // Each player has an individual tile, evenly spaced, with their magnet shown when assigned.
     // The font and magnet sizes follow the user's last selected board font scale; no UI controls are drawn.
     const interchangePlayers=currentInterchangePlayers();
+    const footerPadBottom=Math.round(16*scale);
+    const footerLineGap=Math.round(6*scale);
+    const footerFontSmall=Math.round(12*scale);
+    const footerFontLarge=Math.round(12*scale);
+    const footerTotalH=(footerFontSmall + footerFontLarge + footerLineGap);
+    const footerBaseY=height-footerPadBottom;
+    const benchReservedBottom=footerTotalH + Math.round(18*scale);
+
     if(interchangePlayers.length){
       const sideMargin=Math.round(34*scale);
       const availableW=width-(sideMargin*2);
       const gap=Math.max(Math.round(7*scale),Math.round(5*scale*boardScale));
       const tileH=Math.round(38*scale*(1 + ((boardScale-1)*0.35)));
-      const tileY=height-tileH-Math.round(18*scale);
+      const tileY=height-tileH-benchReservedBottom;
       const count=interchangePlayers.length;
       const maxTileW=Math.round(170*scale*(1 + ((boardScale-1)*0.18)));
       const tileW=Math.min(maxTileW,Math.floor((availableW-(gap*(count-1)))/count));
@@ -1311,7 +1336,7 @@
       const tileRadius=Math.round(8*scale);
       const benchFont=Math.round(13*scale*boardScale);
       const benchMagnetSize=Math.round(18*scale*boardScale);
-      const benchMagnetGap=Math.round(5*scale);
+      const benchMagnetGap=Math.round(5*scale*boardScale);
 
       interchangePlayers.forEach((player,index)=>{
         const x=startX+(index*(tileW+gap));
@@ -1326,7 +1351,7 @@
         const magnet=player.magnet;
         const innerPad=Math.round(8*scale);
         if(magnet){
-          const mx=x+innerPad+(benchMagnetSize/2);
+          const mx=x+tileW-innerPad-(benchMagnetSize/2);
           const my=tileY+(tileH/2);
           ctx.beginPath();
           ctx.arc(mx,my,benchMagnetSize/2,0,Math.PI*2);
@@ -1337,14 +1362,18 @@
           ctx.stroke();
           drawFittedText(ctx,String(magnet.number),mx,my,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
 
-          const textLeft=mx+(benchMagnetSize/2)+benchMagnetGap;
-          const textRight=x+tileW-innerPad;
+          const textLeft=x+innerPad;
+          const textRight=mx-(benchMagnetSize/2)-benchMagnetGap;
           drawFittedText(ctx,player.text,(textLeft+textRight)/2,tileY+(tileH/2),Math.max(12,textRight-textLeft),benchFont,'800','#0b1728');
         }else{
           drawFittedText(ctx,player.text,cx,tileY+(tileH/2),Math.max(12,tileW-(innerPad*2)),benchFont,'800','#0b1728');
         }
       });
     }
+
+    // Bottom footer overlay, similar to the app whiteboard footer.
+    drawFittedText(ctx,'© Gumball Spec – All rights reserved',width/2,footerBaseY-footerFontLarge-footerLineGap,Math.round(width*0.92),footerFontSmall,'700','#ffffff');
+    drawFittedText(ctx,`AFL Coaches Whiteboard • ${screenshotVersion}`,width/2,footerBaseY,Math.round(width*0.92),footerFontLarge,'700','#ffffff');
 
     return canvas;
   }
