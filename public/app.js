@@ -320,7 +320,10 @@
     $('benchGrid').innerHTML=slots.map(slot=>{
       const magnet=getMagnet(slot.id);
       const dot=magnet?`<span class="bench-magnet-dot magnet-${magnet.color}" aria-hidden="true">${magnet.number}</span>`:'';
+      const slotNumber=Number(slot.id.replace('bench',''))||0;
+      const removeButton=slotNumber>DEFAULT_BENCH_COUNT?`<button class="bench-remove-btn" type="button" data-remove-bench="${slot.id}" aria-label="Delete ${escapeHtml(slot.label)}" title="Delete ${escapeHtml(slot.label)}">×</button>`:'';
       return `<div class="bench-slot" data-bench-node="${slot.id}">
+        ${removeButton}
         <div class="bench-label-row" data-bench-magnet-target="${slot.id}"><label for="bench_${slot.id}">${slot.label}</label>${dot}</div>
         <input id="bench_${slot.id}" type="text" list="playerOptions" autocomplete="off" placeholder="Player" data-assignment="${slot.id}" value="${escapeHtml(assignmentDisplay(state.assignments[slot.id]))}" />
       </div>`;
@@ -338,6 +341,32 @@
         toggleSlotMagnet(row.dataset.benchMagnetTarget,activeMagnetColor);
       });
     });
+    $('benchGrid').querySelectorAll('[data-remove-bench]').forEach(btn=>{
+      btn.addEventListener('mousedown',event=>{ event.stopPropagation(); });
+      btn.addEventListener('click',event=>{
+        event.preventDefault(); event.stopPropagation();
+        removeBenchPosition(btn.dataset.removeBench);
+      });
+    });
+  }
+
+  function removeBenchPosition(slotId){
+    const removeNumber=Number(String(slotId||'').replace('bench',''));
+    const currentCount=Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(state.benchCount)||DEFAULT_BENCH_COUNT));
+    if(!Number.isInteger(removeNumber) || removeNumber<=DEFAULT_BENCH_COUNT || removeNumber>currentCount) return;
+
+    // Keep interchange numbering contiguous by shifting every later slot down one.
+    for(let n=removeNumber;n<currentCount;n++){
+      const from=`bench${n+1}`, to=`bench${n}`;
+      state.assignments[to]=state.assignments[from]?{...state.assignments[from]}:{playerId:'',text:''};
+      const fromMag=getMagnet(from);
+      state.magnets[to]=fromMag?{...fromMag}:'';
+    }
+    const last=`bench${currentCount}`;
+    delete state.assignments[last];
+    delete state.magnets[last];
+    state.benchCount=Math.max(DEFAULT_BENCH_COUNT,currentCount-1);
+    saveState(); renderBench(); renderDuplicateWarnings(); renderMagnetPalette();
   }
 
   function addBenchPosition(){
