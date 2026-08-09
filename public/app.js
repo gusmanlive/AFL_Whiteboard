@@ -47,7 +47,7 @@
       temperature:'', weather:'', wind:'', rain:'', rainChance:'',
       windSpeed:null, windDirection:null,
       groundCondition:'', groundConditionNote:'',
-      previous72Rain:null, previous72RainDays:[], previous72RainSource:'',
+      previous72Rain:null, previous72RainDays:[], previous72RainSource:'', previous72RainComplete:false, previous72RainLabel:'Previous 72 hrs rain',
       weatherComments:'', weatherUpdated:''
     };
   }
@@ -431,29 +431,49 @@
     const y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0'), d=String(now.getDate()).padStart(2,'0');
     return `${y}-${m}-${d}`;
   }
-  async function fetchRainForDay(lat,lon,date){
-    const historical=date < localTodayString();
+  async function fetchRainWindow(lat,lon,startDate,endDate,sourceType){
+    const historical=sourceType==='historical';
     const base=historical?'https://archive-api.open-meteo.com/v1/archive':'https://api.open-meteo.com/v1/forecast';
-    const params=new URLSearchParams({latitude:String(lat),longitude:String(lon),start_date:date,end_date:date,daily:'precipitation_sum',timezone:'auto'});
+    const params=new URLSearchParams({
+      latitude:String(lat),longitude:String(lon),start_date:startDate,end_date:endDate,
+      daily:'precipitation_sum',timezone:'auto'
+    });
     const response=await fetch(`${base}?${params}`);
-    if(!response.ok) throw new Error(`Rainfall history lookup failed for ${date}`);
+    if(!response.ok) throw new Error(`${historical?'Historical':'Forecast'} rainfall lookup failed`);
     const data=await response.json();
-    const value=Number(data.daily?.precipitation_sum?.[0]);
-    return {date,rain:Number.isFinite(value)?value:0,source:historical?'observed/historical':'forecast'};
+    const times=data.daily?.time||[];
+    const values=data.daily?.precipitation_sum||[];
+    return times.map((date,i)=>{
+      const value=Number(values[i]);
+      return {date,rain:Number.isFinite(value)?value:null,source:historical?'observed/historical':'forecast'};
+    });
   }
   async function fetchPrevious72Rain(lat,lon,matchDate){
     const dates=[dateOffset(matchDate,-3),dateOffset(matchDate,-2),dateOffset(matchDate,-1)];
-    const days=[];
-    for(const date of dates){
-      try{ days.push(await fetchRainForDay(lat,lon,date)); }
-      catch(_){ days.push({date,rain:0,source:'unavailable'}); }
+    const today=localTodayString();
+    const pastDates=dates.filter(d=>d<today);
+    const futureDates=dates.filter(d=>d>=today);
+    let rows=[];
+    if(pastDates.length){
+      try{ rows.push(...await fetchRainWindow(lat,lon,pastDates[0],pastDates[pastDates.length-1],'historical')); }
+      catch(_){ pastDates.forEach(date=>rows.push({date,rain:null,source:'unavailable'})); }
     }
-    const available=days.filter(d=>d.source!=='unavailable');
+    if(futureDates.length){
+      try{ rows.push(...await fetchRainWindow(lat,lon,futureDates[0],futureDates[futureDates.length-1],'forecast')); }
+      catch(_){ futureDates.forEach(date=>rows.push({date,rain:null,source:'forecast unavailable'})); }
+    }
+    const byDate=new Map(rows.map(r=>[r.date,r]));
+    const days=dates.map(date=>byDate.get(date)||{date,rain:null,source:date<today?'unavailable':'forecast unavailable'});
+    const available=days.filter(d=>Number.isFinite(d.rain));
+    const complete=available.length===3;
     const total=available.reduce((sum,d)=>sum+d.rain,0);
-    state.details.previous72Rain=available.length?Number(total.toFixed(1)):null;
+    state.details.previous72Rain=complete?Number(total.toFixed(1)):null;
     state.details.previous72RainDays=days;
     const sources=[...new Set(available.map(d=>d.source))];
     state.details.previous72RainSource=sources.join(' + ');
+    state.details.previous72RainComplete=complete;
+    state.details.previous72RainLabel=days.every(d=>d.source==='forecast')?'Forecast rain previous 72 hrs':
+      days.every(d=>d.source==='observed/historical')?'Observed rain previous 72 hrs':'Previous 72 hrs rain';
   }
   async function lookupWeather(){
     let lat=Number(state.details.latitude), lon=Number(state.details.longitude);
@@ -493,7 +513,8 @@
   }
   function groundConditionEstimate(){
     const previous=Number(state.details.previous72Rain);
-    const prev=Number.isFinite(previous)?previous:0;
+    const previousAvailable=Number.isFinite(previous) && state.details.previous72RainComplete!==false;
+    const prev=previousAvailable?previous:0;
     const matchRain=parseFloat(state.details.rain)||0;
     const weather=(state.details.weather||'').toLowerCase();
     const labels=['Dry / firm','Damp','Wet / slippery','Wet / soft','Very wet / muddy'];
@@ -504,11 +525,15 @@
     if(/heavy rain|heavy showers|thunderstorm/.test(weather)) level=Math.max(level,2);
     else if(/rain|shower|drizzle/.test(weather)) level=Math.max(level,1);
     level=Math.min(4,level);
+    if(!previousAvailable){
+      return {label:'Forecast pending',note:'A complete rainfall forecast for the 72 hours before the match is not available yet. Ground condition will be estimated automatically once all three lead-in days are within the forecast window.'};
+    }
     const label=labels[level];
-    const prevText=Number.isFinite(previous)?`${previous.toFixed(previous>=10?0:1)} mm`:'unavailable';
+    const prevText=`${previous.toFixed(previous>=10?0:1)} mm`;
     const matchText=`${matchRain.toFixed(matchRain>=10?0:1)} mm`;
+    const leadLabel=state.details.previous72RainLabel||'Previous 72 hrs rain';
     const notes=[
-      `Previous 72-hour rainfall: ${prevText}. Match-day rainfall: ${matchText}.`,
+      `${leadLabel}: ${prevText}. Match-day rainfall: ${matchText}.`,
       level===0?'Recent rainfall is low, so a generally firm surface is more likely.':
       level===1?'Moisture may make parts of the oval damp or slippery.':
       level===2?'Recent and/or match-day rain increases the likelihood of a wet, slippery surface.':
@@ -545,7 +570,8 @@
         ground.hidden=false;
         $('groundEstimateLabel').textContent=state.details.groundCondition||'—';
         $('groundEstimateNote').textContent=state.details.groundConditionNote||'';
-        if($('previous72RainText')) $('previous72RainText').textContent=Number.isFinite(Number(state.details.previous72Rain))?`${Number(state.details.previous72Rain).toFixed(Number(state.details.previous72Rain)>=10?0:1)} mm`:'Unavailable';
+        if($('previous72RainLabel')) $('previous72RainLabel').textContent=state.details.previous72RainLabel||'Previous 72 hrs rain';
+        if($('previous72RainText')) $('previous72RainText').textContent=Number.isFinite(Number(state.details.previous72Rain))?`${Number(state.details.previous72Rain).toFixed(Number(state.details.previous72Rain)>=10?0:1)} mm`:'Forecast pending';
         if($('matchDayRainText')) $('matchDayRainText').textContent=state.details.rain||'0 mm';
       }else{
         ground.hidden=true;

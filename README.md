@@ -1,8 +1,8 @@
-# AFL Coaches Whiteboard v1.1.1
+# AFL Coaches Whiteboard v1.1.2
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
 
-## New in v1.1.1
+## New in v1.1.2
 - Create a shared board with a six-character Board Code and four-digit Coach PIN.
 - Join the same board from other devices.
 - Live full-board synchronization over Cloudflare Durable Object WebSockets.
