@@ -1,8 +1,8 @@
-# AFL Coaches Whiteboard v1.1.7
+# AFL Coaches Whiteboard v1.1.8
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
 
-## New in v1.1.7
+## New in v1.1.8
 
 - Doubled the Whiteboard Coach Notes panel width and reduced the gap between the oval and Notes panel.
 
@@ -21,3 +21,7 @@ Open `public/index.html`. All existing whiteboard features work, but Share Board
 
 ## Cloudflare deployment
 This release is packaged as one Cloudflare Worker that serves the static app and the Durable Object sharing API from the same origin. See `DEPLOY-CLOUDFLARE.md`.
+
+
+## Share links
+When a board is active, **Share Board** creates a URL containing only the 6-character board code. Opening that link preloads the board and asks the recipient only for the 4-digit Coach PIN. The PIN is never placed in the URL. Devices supporting the Web Share API open the native share sheet; other browsers copy the invite URL to the clipboard.

@@ -92,6 +92,7 @@
 
   let state = loadState();
   let shareStatus = syncAdapter.getStatus ? syncAdapter.getStatus() : {mode:'local',connection:'local',connectedCount:0,message:''};
+  let inviteBoardCode = '';
 
   function loadNotesVisible(){
     try{
@@ -668,6 +669,57 @@
     opened.location.href=url.toString();
   }
 
+  function normaliseBoardCode(value='') {
+    return String(value).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  }
+
+  function boardInviteUrl(code=state.boardId) {
+    const cleanCode=normaliseBoardCode(code);
+    if(cleanCode.length!==6) return '';
+    const url=new URL(window.location.href);
+    url.search='';
+    url.hash='';
+    url.searchParams.set('board',cleanCode);
+    return url.toString();
+  }
+
+  function clearInviteFromUrl() {
+    inviteBoardCode='';
+    try{
+      const url=new URL(window.location.href);
+      if(url.searchParams.has('board')){
+        url.searchParams.delete('board');
+        history.replaceState(null,'',`${url.pathname}${url.search}${url.hash}`);
+      }
+    }catch(_){ }
+  }
+
+  function applyInviteFromUrl() {
+    let code='';
+    try{ code=normaliseBoardCode(new URL(window.location.href).searchParams.get('board') || ''); }
+    catch(_){ code=''; }
+    if(code.length!==6 || (state.mode==='shared' && state.boardId)) return;
+    inviteBoardCode=code;
+    if($('joinBoardCode')) $('joinBoardCode').value=code;
+    if($('createBoardSection')) $('createBoardSection').hidden=true;
+    if($('joinBoardCodeSection')) $('joinBoardCodeSection').hidden=true;
+    if($('shareLocalHeading')) $('shareLocalHeading').textContent='Join Shared Board';
+    if($('shareLocalIntro')) $('shareLocalIntro').innerHTML=`Board <strong>${escapeHtml(code)}</strong> is ready to join. Enter the 4-digit Coach PIN.`;
+    if($('joinBoardPin')){
+      $('joinBoardPin').placeholder='Enter Coach PIN';
+      setTimeout(()=>$('joinBoardPin')?.focus(),50);
+    }
+  }
+
+  function resetInviteJoinUi() {
+    if(inviteBoardCode) return;
+    if($('createBoardSection')) $('createBoardSection').hidden=false;
+    if($('joinBoardCodeSection')) $('joinBoardCodeSection').hidden=false;
+    if($('shareLocalHeading')) $('shareLocalHeading').textContent='Share with coaches';
+    if($('shareLocalIntro')) $('shareLocalIntro').innerHTML='Create a live board or join one from another device. Shared boards are automatically deleted after <strong>30 days without activity</strong>.';
+    if($('joinBoardPin')) $('joinBoardPin').placeholder='4 digits';
+  }
+
   function setShareMessage(message='', type='') {
     const el=$('shareStatusMessage');
     if(!el) return;
@@ -679,6 +731,7 @@
     const shared=state.mode==='shared' && Boolean(state.boardId);
     if($('shareLocalPanel')) $('shareLocalPanel').hidden=shared;
     if($('shareActivePanel')) $('shareActivePanel').hidden=!shared;
+    if(!shared) resetInviteJoinUi();
     const pill=$('boardStatusPill');
     if(pill){
       pill.className='status-pill';
@@ -704,7 +757,7 @@
   }
 
   function setShareBusy(busy){
-    ['createBoardBtn','joinBoardBtn','leaveBoardBtn'].forEach(id=>{ if($(id)) $(id).disabled=busy; });
+    ['createBoardBtn','joinBoardBtn','leaveBoardBtn','shareBoardLinkBtn'].forEach(id=>{ if($(id)) $(id).disabled=busy; });
   }
 
   async function createSharedBoard(){
@@ -724,7 +777,7 @@
   }
 
   async function joinSharedBoard(){
-    const code=String($('joinBoardCode')?.value || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+    const code=normaliseBoardCode(inviteBoardCode || $('joinBoardCode')?.value || '');
     const pin=String($('joinBoardPin')?.value || '').trim();
     if(code.length!==6){ setShareMessage('Enter the 6-character Board Code.','error'); return; }
     if(!/^\d{4}$/.test(pin)){ setShareMessage('Enter the 4-digit Coach PIN.','error'); return; }
@@ -735,6 +788,7 @@
       state.boardId=code; state.mode='shared';
       saveState({publish:false}); renderAll();
       if($('joinBoardPin')) $('joinBoardPin').value='';
+      clearInviteFromUrl();
       setShareMessage(`Joined board ${code}.`,'success');
     }catch(error){ setShareMessage(error.message || 'Could not join board.','error'); }
     finally{ setShareBusy(false); }
@@ -756,6 +810,32 @@
     catch(_){ setShareMessage(`Board code: ${state.boardId}`,'success'); }
   }
 
+  async function shareBoardLink(){
+    if(!state.boardId) return;
+    const url=boardInviteUrl(state.boardId);
+    if(!url){ setShareMessage('Could not create the board link.','error'); return; }
+    const shareData={
+      title:'AFL Coaches Whiteboard',
+      text:`Join AFL Coaches Whiteboard ${state.boardId}. You will need the Coach PIN.`,
+      url
+    };
+    try{
+      if(navigator.share){
+        await navigator.share(shareData);
+        setShareMessage('Board sharing opened.','success');
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareMessage('Board link copied. Send it to your coaches; they will only need the PIN.','success');
+    }catch(error){
+      if(error?.name==='AbortError') return;
+      try{
+        await navigator.clipboard.writeText(url);
+        setShareMessage('Board link copied. Send it to your coaches; they will only need the PIN.','success');
+      }catch(_){ setShareMessage(`Share this link: ${url}`,'success'); }
+    }
+  }
+
   function resetAll(){
     if(!confirm('Reset all match details, team list, weather, notes and whiteboard positions?')) return;
     state=defaultState(); saveState(); renderAll(); setTeamListStatus(''); setWeatherStatus(''); setTab('setup');
@@ -773,7 +853,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', async()=>{
-    renderAll(); bindDetails(); bindNotes();
+    renderAll(); applyInviteFromUrl(); bindDetails(); bindNotes();
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));
@@ -789,7 +869,8 @@
     $('joinBoardBtn').addEventListener('click',joinSharedBoard);
     $('leaveBoardBtn').addEventListener('click',leaveSharedBoard);
     $('copyBoardCodeBtn').addEventListener('click',copyBoardCode);
-    $('joinBoardCode').addEventListener('input',e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); });
+    $('shareBoardLinkBtn').addEventListener('click',shareBoardLink);
+    $('joinBoardCode').addEventListener('input',e=>{ e.target.value=normaliseBoardCode(e.target.value); });
     ['sharePin','joinBoardPin'].forEach(id=>$(id).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,'').slice(0,4); }));
     syncAdapter.subscribe(mergeRemoteState);
     if(syncAdapter.onStatus) syncAdapter.onStatus(status=>{ shareStatus=status; renderShare(); });

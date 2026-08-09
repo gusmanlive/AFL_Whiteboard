@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.1.7</div>
+      <div class="version">Version 1.1.8</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -109,14 +109,18 @@
             <span class="eyebrow">SHARED BOARD</span>
 
             <div id="shareLocalPanel">
-              <h3>Share with coaches</h3>
-              <p>Create a live board or join one from another device. Shared boards are automatically deleted after <strong>30 days without activity</strong>.</p>
-              <label class="share-label" for="sharePin">Coach PIN</label>
-              <input id="sharePin" class="share-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="4 digits" />
-              <button id="createBoardBtn" class="btn primary full share-action" type="button">Create Board</button>
-              <div class="share-divider"><span>or join</span></div>
-              <label class="share-label" for="joinBoardCode">Board Code</label>
-              <input id="joinBoardCode" class="share-input board-code-input" type="text" maxlength="6" autocomplete="off" placeholder="ABC123" />
+              <h3 id="shareLocalHeading">Share with coaches</h3>
+              <p id="shareLocalIntro">Create a live board or join one from another device. Shared boards are automatically deleted after <strong>30 days without activity</strong>.</p>
+              <div id="createBoardSection">
+                <label class="share-label" for="sharePin">Coach PIN</label>
+                <input id="sharePin" class="share-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="4 digits" />
+                <button id="createBoardBtn" class="btn primary full share-action" type="button">Create Board</button>
+                <div class="share-divider"><span>or join</span></div>
+              </div>
+              <div id="joinBoardCodeSection">
+                <label class="share-label" for="joinBoardCode">Board Code</label>
+                <input id="joinBoardCode" class="share-input board-code-input" type="text" maxlength="6" autocomplete="off" placeholder="ABC123" />
+              </div>
               <label class="share-label" for="joinBoardPin">Coach PIN</label>
               <input id="joinBoardPin" class="share-input" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 digits" />
               <button id="joinBoardBtn" class="btn secondary full share-action" type="button">Join Board</button>
@@ -133,6 +137,7 @@
               </div>
               <div id="connectedCoachCount" class="share-coaches">1 coach connected</div>
               <button id="copyBoardCodeBtn" class="btn primary full share-action" type="button">Copy Board Code</button>
+              <button id="shareBoardLinkBtn" class="btn primary full share-action" type="button">Share Board</button>
               <button id="leaveBoardBtn" class="btn secondary full share-action" type="button">Leave Shared Board</button>
               <p class="share-retention">30-day retention resets whenever the board is accessed or edited.</p>
             </div>
@@ -245,7 +250,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.1.7</span>
+    <span>AFL Coaches Whiteboard • v1.1.8</span>
   </footer>
 
   <script src="sync-adapter.js"></script>
