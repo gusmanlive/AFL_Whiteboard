@@ -1194,7 +1194,8 @@
     return benchSlots(state.benchCount)
       .map(slot=>{
         const input=$(`bench_${slot.id}`);
-        return String(input ? (input.value||'') : assignmentDisplay(state.assignments[slot.id])).trim();
+        const text=String(input ? (input.value||'') : assignmentDisplay(state.assignments[slot.id])).trim();
+        return text ? {slotId:slot.id,text,magnet:getMagnet(slot.id)} : null;
       })
       .filter(Boolean);
   }
@@ -1292,31 +1293,57 @@
     });
 
 
-    // Screenshot-only interchange strip. Keep it to one line at the bottom of the oval.
-    // The font follows the user's last selected board font scale; no on-screen controls are drawn.
+    // Screenshot-only interchange tiles. Keep assigned interchange players on one horizontal line.
+    // Each player has an individual tile, evenly spaced, with their magnet shown when assigned.
+    // The font and magnet sizes follow the user's last selected board font scale; no UI controls are drawn.
     const interchangePlayers=currentInterchangePlayers();
     if(interchangePlayers.length){
-      const stripX=Math.round(34*scale);
-      const stripH=Math.round(38*scale*(1 + ((boardScale-1)*0.35)));
-      const stripY=height-stripH-Math.round(18*scale);
-      const stripW=width-(stripX*2);
-      roundedRectPath(ctx,stripX,stripY,stripW,stripH,Math.round(9*scale));
-      ctx.fillStyle='rgba(255,255,255,0.94)';
-      ctx.fill();
-      ctx.lineWidth=Math.max(1,scale);
-      ctx.strokeStyle='rgba(6,18,33,0.20)';
-      ctx.stroke();
-      const interchangeText=`Bench: ${interchangePlayers.join('  •  ')}`;
-      drawFittedText(
-        ctx,
-        interchangeText,
-        width/2,
-        stripY+(stripH/2),
-        stripW-Math.round(24*scale),
-        Math.round(13*scale*boardScale),
-        '800',
-        '#0b1728'
-      );
+      const sideMargin=Math.round(34*scale);
+      const availableW=width-(sideMargin*2);
+      const gap=Math.max(Math.round(7*scale),Math.round(5*scale*boardScale));
+      const tileH=Math.round(38*scale*(1 + ((boardScale-1)*0.35)));
+      const tileY=height-tileH-Math.round(18*scale);
+      const count=interchangePlayers.length;
+      const maxTileW=Math.round(170*scale*(1 + ((boardScale-1)*0.18)));
+      const tileW=Math.min(maxTileW,Math.floor((availableW-(gap*(count-1)))/count));
+      const rowW=(tileW*count)+(gap*(count-1));
+      const startX=(width-rowW)/2;
+      const tileRadius=Math.round(8*scale);
+      const benchFont=Math.round(13*scale*boardScale);
+      const benchMagnetSize=Math.round(18*scale*boardScale);
+      const benchMagnetGap=Math.round(5*scale);
+
+      interchangePlayers.forEach((player,index)=>{
+        const x=startX+(index*(tileW+gap));
+        const cx=x+(tileW/2);
+        roundedRectPath(ctx,x,tileY,tileW,tileH,tileRadius);
+        ctx.fillStyle='rgba(255,255,255,0.95)';
+        ctx.fill();
+        ctx.lineWidth=Math.max(1,scale);
+        ctx.strokeStyle='rgba(6,18,33,0.20)';
+        ctx.stroke();
+
+        const magnet=player.magnet;
+        const innerPad=Math.round(8*scale);
+        if(magnet){
+          const mx=x+innerPad+(benchMagnetSize/2);
+          const my=tileY+(tileH/2);
+          ctx.beginPath();
+          ctx.arc(mx,my,benchMagnetSize/2,0,Math.PI*2);
+          ctx.fillStyle=magnetColors[magnet.color] || '#111827';
+          ctx.fill();
+          ctx.lineWidth=Math.max(2,2*scale);
+          ctx.strokeStyle='rgba(255,255,255,0.95)';
+          ctx.stroke();
+          drawFittedText(ctx,String(magnet.number),mx,my,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
+
+          const textLeft=mx+(benchMagnetSize/2)+benchMagnetGap;
+          const textRight=x+tileW-innerPad;
+          drawFittedText(ctx,player.text,(textLeft+textRight)/2,tileY+(tileH/2),Math.max(12,textRight-textLeft),benchFont,'800','#0b1728');
+        }else{
+          drawFittedText(ctx,player.text,cx,tileY+(tileH/2),Math.max(12,tileW-(innerPad*2)),benchFont,'800','#0b1728');
+        }
+      });
     }
 
     return canvas;
