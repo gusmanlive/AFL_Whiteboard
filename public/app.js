@@ -10,15 +10,15 @@
   const MAGNET_COLORS = ['black','blue','red','yellow','green'];
 
   const POSITIONS = [
-    { id:'fp_left', role:'FP', label:'Forward Pocket', x:30, y:17 },
+    { id:'fp_left', role:'FP', label:'Forward Pocket', x:28.5, y:17 },
     { id:'ff', role:'FF', label:'Full Forward', x:50, y:14 },
-    { id:'fp_right', role:'FP', label:'Forward Pocket', x:70, y:17 },
-    { id:'hff_left', role:'HFF', label:'Half Forward Flank', x:26, y:31.5 },
+    { id:'fp_right', role:'FP', label:'Forward Pocket', x:71.5, y:17 },
+    { id:'hff_left', role:'HFF', label:'Half Forward Flank', x:24.5, y:31.5 },
     { id:'chf', role:'CHF', label:'Centre Half Forward', x:50, y:31 },
-    { id:'hff_right', role:'HFF', label:'Half Forward Flank', x:74, y:31.5 },
-    { id:'wing_left', role:'W', label:'Wing', x:22, y:50 },
+    { id:'hff_right', role:'HFF', label:'Half Forward Flank', x:75.5, y:31.5 },
+    { id:'wing_left', role:'W', label:'Wing', x:20.5, y:50 },
     { id:'centre', role:'C', label:'Centre', x:39, y:43 },
-    { id:'wing_right', role:'W', label:'Wing', x:78, y:50 },
+    { id:'wing_right', role:'W', label:'Wing', x:79.5, y:50 },
     { id:'ruck', role:'RUCK', label:'Ruck', x:61, y:43 },
     { id:'ruck_rover', role:'RR', label:'Ruck Rover', x:39, y:56 },
     { id:'rover', role:'ROV', label:'Rover', x:61, y:56 },
