@@ -2,6 +2,7 @@
   'use strict';
 
   const STORAGE_KEY = 'afl-coaches-whiteboard-v1';
+  const NOTES_VISIBILITY_KEY = 'afl-coaches-whiteboard-notes-visible';
   const MAX_PLAYERS = 50;
 
   const POSITIONS = [
@@ -91,6 +92,14 @@
 
   let state = loadState();
   let shareStatus = syncAdapter.getStatus ? syncAdapter.getStatus() : {mode:'local',connection:'local',connectedCount:0,message:''};
+
+  function loadNotesVisible(){
+    try{
+      const saved=localStorage.getItem(NOTES_VISIBILITY_KEY);
+      return saved === null ? true : saved !== 'false';
+    }catch(_){ return true; }
+  }
+  let notesVisible=loadNotesVisible();
 
 
   function snapshot(){ return JSON.parse(JSON.stringify(state)); }
@@ -251,6 +260,21 @@
       state.notes=el.value.slice(0,1200);
       saveState();
     });
+  }
+
+  function renderNotesVisibility(){
+    const panel=$('boardNotesPanel');
+    const showBtn=$('showNotesBtn');
+    const layout=document.querySelector('.field-notes-layout');
+    if(panel) panel.hidden=!notesVisible;
+    if(showBtn) showBtn.hidden=notesVisible;
+    if(layout) layout.classList.toggle('notes-hidden', !notesVisible);
+  }
+
+  function setNotesVisible(visible){
+    notesVisible=Boolean(visible);
+    try{ localStorage.setItem(NOTES_VISIBILITY_KEY, String(notesVisible)); }catch(_){}
+    renderNotesVisibility();
   }
 
   function renderSetupDetails(){
@@ -738,7 +762,7 @@
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
-    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare();
+    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare();
   }
   function registerServiceWorker(){
     if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});
@@ -746,6 +770,8 @@
 
   document.addEventListener('DOMContentLoaded', async()=>{
     renderAll(); bindDetails(); bindNotes();
+    $('hideNotesBtn')?.addEventListener('click',()=>setNotesVisible(false));
+    $('showNotesBtn')?.addEventListener('click',()=>setNotesVisible(true));
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));
     $('goWhiteboardBtn').addEventListener('click',()=>setTab('whiteboard'));

@@ -1,8 +1,8 @@
-# AFL Coaches Whiteboard v1.1.5
+# AFL Coaches Whiteboard v1.1.6
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
 
-## New in v1.1.5
+## New in v1.1.6
 
 - Doubled the Whiteboard Coach Notes panel width and reduced the gap between the oval and Notes panel.
 

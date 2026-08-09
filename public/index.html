@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.1.5</div>
+      <div class="version">Version 1.1.6</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -64,14 +64,18 @@
               <div id="positionLayer"></div>
             </div>
 
-            <aside class="board-notes" aria-label="Coach notes">
+            <aside id="boardNotesPanel" class="board-notes" aria-label="Coach notes">
               <div class="board-notes-heading">
-                <span class="eyebrow">COACH</span>
-                <h3>Notes</h3>
+                <div>
+                  <span class="eyebrow">COACH</span>
+                  <h3>Notes</h3>
+                </div>
+                <button id="hideNotesBtn" class="notes-toggle-btn" type="button" aria-label="Hide notes">Hide</button>
               </div>
               <textarea id="boardNotes" maxlength="1200" placeholder="Add short coaching notes…" aria-label="Whiteboard coach notes"></textarea>
               <div class="notes-helper">Autosaved and shared with connected coaches.</div>
             </aside>
+            <button id="showNotesBtn" class="show-notes-tab" type="button" aria-label="Show notes" hidden>Show Notes</button>
           </div>
 
           <div class="bench-wrap">
@@ -242,7 +246,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.1.5</span>
+    <span>AFL Coaches Whiteboard • v1.1.6</span>
   </footer>
 
   <script src="sync-adapter.js"></script>
