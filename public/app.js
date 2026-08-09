@@ -57,12 +57,13 @@
     POSITIONS.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     BENCH.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     return {
-      schemaVersion:6,
+      schemaVersion:7,
       boardId:null,
       mode:'local',
       details:defaultDetails(),
       roster:[],
       teamListText:'',
+      notes:'',
       assignments,
       updatedAt:new Date().toISOString()
     };
@@ -77,7 +78,7 @@
       return {
         ...base,
         ...parsed,
-        schemaVersion:6,
+        schemaVersion:7,
         details:{...base.details, ...(parsed.details || {})},
         assignments:{...base.assignments, ...(parsed.assignments || {})},
         roster:Array.isArray(parsed.roster) ? parsed.roster.filter(Boolean).map(cleanRosterPlayer) : []
@@ -238,6 +239,20 @@
     $('infoAway').textContent=state.details.awayTeam||'—';
     $('infoLocation').textContent=state.details.location||'—';
   }
+  function renderNotes(){
+    const el=$('boardNotes');
+    if(el && el.value !== String(state.notes || '')) el.value=String(state.notes || '');
+  }
+
+  function bindNotes(){
+    const el=$('boardNotes');
+    if(!el) return;
+    el.addEventListener('input',()=>{
+      state.notes=el.value.slice(0,1200);
+      saveState();
+    });
+  }
+
   function renderSetupDetails(){
     $('matchDate').value=state.details.date||'';
     $('matchTime').value=state.details.time||'';
@@ -714,7 +729,7 @@
   }
 
   function resetAll(){
-    if(!confirm('Reset all match details, team list, weather and whiteboard positions?')) return;
+    if(!confirm('Reset all match details, team list, weather, notes and whiteboard positions?')) return;
     state=defaultState(); saveState(); renderAll(); setTeamListStatus(''); setWeatherStatus(''); setTab('setup');
   }
   function mergeRemoteState(remote){
@@ -723,14 +738,14 @@
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
-    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare();
+    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare();
   }
   function registerServiceWorker(){
     if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});
   }
 
   document.addEventListener('DOMContentLoaded', async()=>{
-    renderAll(); bindDetails();
+    renderAll(); bindDetails(); bindNotes();
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));
     $('goWhiteboardBtn').addEventListener('click',()=>setTab('whiteboard'));

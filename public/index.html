@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.1.2</div>
+      <div class="version">Version 1.1.3</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -52,15 +52,26 @@
             <p>Select from the Setup roster or type a name/role.</p>
           </div>
 
-          <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
-            <svg class="field-markings" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
-              <ellipse cx="50" cy="70" rx="43" ry="58" class="field-outline" />
-              <path d="M 21 34 Q 50 61 79 34" class="field-arc field-arc-top" />
-              <path d="M 21 106 Q 50 79 79 106" class="field-arc field-arc-bottom" />
-              <rect x="31" y="57" width="38" height="26" class="field-square" />
-              <circle cx="50" cy="70" r="4.3" class="field-circle" />
-            </svg>
-            <div id="positionLayer"></div>
+          <div class="field-notes-layout">
+            <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
+              <svg class="field-markings" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+                <ellipse cx="50" cy="70" rx="43" ry="58" class="field-outline" />
+                <path d="M 21 34 Q 50 61 79 34" class="field-arc field-arc-top" />
+                <path d="M 21 106 Q 50 79 79 106" class="field-arc field-arc-bottom" />
+                <rect x="31" y="57" width="38" height="26" class="field-square" />
+                <circle cx="50" cy="70" r="4.3" class="field-circle" />
+              </svg>
+              <div id="positionLayer"></div>
+            </div>
+
+            <aside class="board-notes" aria-label="Coach notes">
+              <div class="board-notes-heading">
+                <span class="eyebrow">COACH</span>
+                <h3>Notes</h3>
+              </div>
+              <textarea id="boardNotes" maxlength="1200" placeholder="Add short coaching notes…" aria-label="Whiteboard coach notes"></textarea>
+              <div class="notes-helper">Autosaved and shared with connected coaches.</div>
+            </aside>
           </div>
 
           <div class="bench-wrap">
@@ -231,7 +242,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.1.2</span>
+    <span>AFL Coaches Whiteboard • v1.1.3</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

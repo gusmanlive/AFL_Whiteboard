@@ -105,13 +105,47 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .section-heading h2 { margin: 3px 0 0; font-size: 22px; color: var(--navy-900); }
 .section-heading p { max-width: 520px; margin: 4px 0 0; color: var(--muted); font-size: 13px; text-align: right; }
 
+.field-notes-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(150px, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+.board-notes {
+  min-width: 0;
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.board-notes-heading { margin-bottom: 9px; }
+.board-notes-heading h3 { margin: 3px 0 0; color: var(--navy-900); font-size: 18px; }
+.board-notes textarea {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 520px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 10px;
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  outline: none;
+}
+.board-notes textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(20,115,230,.12); }
+.notes-helper { margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+
 .oval {
   position: relative;
   width: 100%;
   max-width: 760px;
   aspect-ratio: 0.72 / 1;
   min-height: 700px;
-  margin: 0 auto;
+  margin: 0;
   overflow: visible;
   background: linear-gradient(180deg, #7cc242 0%, #73b83c 100%);
   box-shadow: inset 0 0 0 3px rgba(18, 88, 25, .24), 0 10px 22px rgba(20, 61, 22, .16);
@@ -246,6 +280,8 @@ footer {
 
 @media (max-width: 1080px) {
   .whiteboard-layout { grid-template-columns: 1fr; }
+  .field-notes-layout { grid-template-columns: minmax(0, 5fr) minmax(140px, 1fr); }
+  .board-notes textarea { min-height: 430px; }
   .info-card { position: static; }
   .match-info { display:grid; grid-template-columns: repeat(5,1fr); gap:8px; }
   .match-info > div { border:1px solid var(--line); border-radius:9px; padding:10px; }
@@ -265,6 +301,9 @@ footer {
   .status-row { align-items:flex-start; }
   .autosave { text-align:right; }
   .field-card, .info-card, .setup-card, .roster-card { padding:12px; border-radius:12px; }
+  .field-notes-layout { grid-template-columns: 1fr; }
+  .board-notes { min-height: 180px; }
+  .board-notes textarea { min-height: 130px; }
   .section-heading { display:block; }
   .section-heading p { text-align:left; margin-top:5px; }
   .oval { min-height: 0; aspect-ratio: .72 / 1; max-width: 100%; border-radius: 14px; }
