@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.0.2</div>
+      <div class="version">Version 1.0.4</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -55,20 +55,10 @@
           <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
             <svg class="field-markings" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
               <ellipse cx="50" cy="70" rx="43" ry="58" class="field-outline" />
-              <path d="M 21 34 Q 50 61 79 34" class="field-arc" />
-              <path d="M 21 106 Q 50 79 79 106" class="field-arc" />
+              <path d="M 21 34 Q 50 61 79 34" class="field-arc field-arc-top" />
+              <path d="M 21 106 Q 50 79 79 106" class="field-arc field-arc-bottom" />
               <rect x="31" y="57" width="38" height="26" class="field-square" />
               <circle cx="50" cy="70" r="4.3" class="field-circle" />
-              <rect x="46" y="12" width="8" height="8" class="goal-square" />
-              <rect x="46" y="120" width="8" height="8" class="goal-square" />
-              <line x1="48" y1="2" x2="48" y2="12" class="goal-post" />
-              <line x1="52" y1="2" x2="52" y2="12" class="goal-post" />
-              <line x1="38" y1="7" x2="38" y2="16" class="behind-post" />
-              <line x1="62" y1="7" x2="62" y2="16" class="behind-post" />
-              <line x1="48" y1="128" x2="48" y2="138" class="goal-post" />
-              <line x1="52" y1="128" x2="52" y2="138" class="goal-post" />
-              <line x1="38" y1="124" x2="38" y2="133" class="behind-post" />
-              <line x1="62" y1="124" x2="62" y2="133" class="behind-post" />
             </svg>
             <div id="positionLayer"></div>
           </div>
@@ -89,7 +79,7 @@
           <div class="section-heading compact">
             <div>
               <span class="eyebrow">MATCH</span>
-              <h2>Information</h2>
+              <h2>Match Details</h2>
             </div>
           </div>
           <dl class="match-info">
@@ -119,7 +109,7 @@
               <span class="eyebrow">MATCH SETUP</span>
               <h2>Match Details</h2>
             </div>
-            <p>These fields appear in the Whiteboard information panel.</p>
+            <p>Enter match details here. The Whiteboard tab only displays these values.</p>
           </div>
 
           <div class="form-grid">
@@ -141,47 +131,78 @@
           </div>
         </section>
 
-        <section class="card roster-card">
-          <div class="section-heading roster-heading">
+        <section class="card team-list-card">
+          <div class="section-heading">
             <div>
               <span class="eyebrow">TEAM LIST</span>
-              <h2>Player Roster</h2>
-            </div>
-            <div class="roster-actions">
-              <button id="addPlayerBtn" class="btn primary" type="button">+ Add Player</button>
-              <button id="clearRosterBtn" class="btn secondary" type="button">Clear Roster</button>
+              <h2>Player List</h2>
             </div>
           </div>
-          <p class="helper">Enter player number, first name and surname. Up to 50 players can be stored. Player numbers should be unique.</p>
-
-          <div class="roster-table-wrap">
-            <table class="roster-table">
-              <thead>
-                <tr>
-                  <th class="row-num">#</th>
-                  <th>Number</th>
-                  <th>First Name</th>
-                  <th>Surname</th>
-                  <th class="remove-col"></th>
-                </tr>
-              </thead>
-              <tbody id="rosterBody"></tbody>
-            </table>
+          <p class="helper team-list-help"><strong>Copy &amp; Paste a PlayHQ Line-Up here, OR enter manually using the #teamlist format (number,firstname,surname).</strong><br>
+          Maximum 50 players; player numbers must be unique. The saved list populates every player selector on the Whiteboard.</p>
+          <textarea id="teamListInput" class="team-list-input" spellcheck="false" placeholder="#teamlist&#10;&#10;1,Firstname,Surname&#10;2,Firstname,Surname2&#10;3,Firstname,Surname3&#10;4,And,So-On"></textarea>
+          <div class="team-list-actions">
+            <button id="saveTeamListBtn" class="btn primary" type="button">Save Team List</button>
+            <button id="clearRosterBtn" class="btn secondary" type="button">Clear Team List</button>
+            <span id="rosterCount">0/50 loaded</span>
           </div>
-          <div class="roster-footer">
-            <span id="rosterCount">0 / 50 players</span>
-            <button id="goWhiteboardBtn" class="btn primary" type="button">Open Whiteboard</button>
-          </div>
+          <div id="teamListStatus" class="inline-status" role="status" aria-live="polite"></div>
         </section>
+
+        <section class="card weather-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">LOCATION &amp; WEATHER</span>
+              <h2>📍 Location &amp; Weather</h2>
+            </div>
+          </div>
+          <p class="helper weather-help">Match Location above remains a free-text board field and is not used for weather. Enter a separate location below, or leave it blank and use GPS. Weather uses the match date; when date is blank it uses today.</p>
+
+          <label class="weather-location-label">Location
+            <input id="weatherLocation" type="text" placeholder="e.g. Gawler, South Australia" autocomplete="off" />
+          </label>
+
+          <div class="weather-actions">
+            <button id="lookupLocationBtn" class="btn secondary" type="button">🔎 Lookup Location</button>
+            <button id="getGpsBtn" class="btn secondary" type="button">📌 Get GPS</button>
+            <button id="lookupWeatherBtn" class="btn primary" type="button">☁ Lookup Weather</button>
+            <button id="viewGroundBtn" class="btn dark" type="button">🛠 View Ground Conditions</button>
+          </div>
+
+          <div id="weatherSummary" class="weather-summary" hidden></div>
+          <div id="locationWeatherStatus" class="inline-status" role="status" aria-live="polite"></div>
+
+          <label class="weather-comments-label">Weather comments
+            <input id="weatherComments" type="text" placeholder="comment on weather" autocomplete="off" />
+          </label>
+        </section>
+
+        <div class="setup-footer-actions">
+          <button id="goWhiteboardBtn" class="btn primary" type="button">Open Whiteboard</button>
+        </div>
       </div>
     </section>
   </main>
+
+  <div id="groundModal" class="modal-backdrop" hidden>
+    <section class="ground-modal" role="dialog" aria-modal="true" aria-labelledby="groundModalTitle">
+      <div class="ground-modal-head">
+        <div>
+          <span class="eyebrow">GROUND CONDITIONS</span>
+          <h2 id="groundModalTitle">Match-day ground estimate</h2>
+        </div>
+        <button id="closeGroundModal" class="icon-btn modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div id="groundModalBody"></div>
+      <p class="ground-note">Ground condition is an estimate from recorded weather and rainfall only. Coaches should confirm the actual surface on arrival.</p>
+    </section>
+  </div>
 
   <datalist id="playerOptions"></datalist>
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.0.2</span>
+    <span>AFL Coaches Whiteboard • v1.0.4</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

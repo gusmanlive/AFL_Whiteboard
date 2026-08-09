@@ -1,6 +1,6 @@
 # AFL Coaches Whiteboard
 
-Version 1.0.2
+Version 1.0.4
 
 A local-first browser whiteboard for AFL coaches. This first version is deliberately backend-free so the Whiteboard and Setup workflow can be tested before adding shared Cloudflare boards.
 
@@ -102,3 +102,11 @@ Proposed next layer:
 ---
 
 Copyright © Gumball Spec – All rights reserved
+
+
+## Version 1.0.4
+- Match details are entered only on Setup and displayed read-only on Whiteboard.
+- Whiteboard information panel renamed Match Details.
+- Oval markings simplified to white perimeter, blue top 50m arc and red bottom 50m arc.
+- Replaced multi-field roster editor with paste-in PlayHQ / #teamlist team-list import (max 50).
+- Added Location & Weather setup card with location search, GPS, weather lookup, comments and ground-condition estimate.

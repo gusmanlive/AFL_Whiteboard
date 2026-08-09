@@ -1,4 +1,4 @@
-const CACHE_NAME = 'afl-coaches-whiteboard-v1.0.2';
+const CACHE_NAME = 'afl-coaches-whiteboard-v1.0.4';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './sync-adapter.js', './manifest.json', './afl-whiteboard-logo.png'];
 
 self.addEventListener('install', event => {
