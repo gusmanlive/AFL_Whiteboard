@@ -1306,7 +1306,7 @@
       ctx.lineWidth=Math.max(1,scale);
       ctx.strokeStyle='rgba(6,18,33,0.20)';
       ctx.stroke();
-      const interchangeText=`INTERCHANGE: ${interchangePlayers.join('  •  ')}`;
+      const interchangeText=`Bench: ${interchangePlayers.join('  •  ')}`;
       drawFittedText(
         ctx,
         interchangeText,
