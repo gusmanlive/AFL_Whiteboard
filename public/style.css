@@ -175,6 +175,77 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .field-notes-layout.notes-hidden { grid-template-columns: minmax(0, 1fr); }
 .field-notes-layout.notes-hidden .oval { max-width: 100%; }
 
+.oval-magnets {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 6;
+  padding: 8px 9px;
+  border: 1px solid rgba(255,255,255,.88);
+  border-radius: 12px;
+  background: rgba(7,23,44,.88);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,.18);
+  min-width: 148px;
+}
+.oval-magnets-label {
+  display:block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.oval-magnet-buttons {
+  display:flex;
+  gap:7px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.magnet-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow: inset 0 0 0 1px rgba(6,18,33,.25);
+  cursor: pointer;
+}
+.magnet-swatch.is-active {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.22), inset 0 0 0 1px rgba(6,18,33,.25);
+}
+.magnet-black { background:#111827; }
+.magnet-blue { background:#2563eb; }
+.magnet-red { background:#dc2626; }
+.magnet-yellow { background:#facc15; }
+.magnet-green { background:#16a34a; }
+.oval-magnets-help {
+  margin-top: 6px;
+  color: rgba(255,255,255,.84);
+  font-size: 10px;
+  line-height: 1.25;
+}
+.position-node.has-magnet .position-role,
+.position-node.has-magnet .position-input {
+  box-shadow: 0 2px 7px rgba(0,0,0,.14);
+}
+.position-magnet-dot {
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translate(-100%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.92);
+  box-shadow: 0 2px 5px rgba(0,0,0,.22);
+  pointer-events: none;
+}
+.position-magnet-dot.magnet-black { background:#111827; }
+.position-magnet-dot.magnet-blue { background:#2563eb; }
+.position-magnet-dot.magnet-red { background:#dc2626; }
+.position-magnet-dot.magnet-yellow { background:#facc15; }
+.position-magnet-dot.magnet-green { background:#16a34a; }
 
 .oval {
   position: relative;
@@ -214,6 +285,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   position: absolute; transform: translate(-50%,-50%);
   width: clamp(104px, 17.82%, 149px);
   z-index: 2;
+  overflow: visible;
 }
 .position-role {
   display: block; margin: 0 auto 4px; width: max-content; max-width: 100%;
@@ -346,6 +418,9 @@ footer {
   .section-heading p { text-align:left; margin-top:5px; }
   .oval { min-height: 0; aspect-ratio: .72 / 1; max-width: 100%; border-radius: 14px; }
   .oval-notes-toggle { top:7px; right:7px; padding:6px 8px; font-size:10px; }
+  .oval-magnets { top:7px; left:7px; padding:7px 8px; min-width: 132px; }
+  .oval-magnets-help { font-size:9px; }
+  .magnet-swatch { width:20px; height:20px; }
   .position-node { width: clamp(85px, 21.6%, 113px); }
   .position-role { font-size:8px; padding:1px 5px; }
   .position-input { height:29px; font-size:9px; padding:4px; }
@@ -365,6 +440,10 @@ footer {
   .app-header h1 { font-size:17px; }
   .oval { aspect-ratio: .72 / 1; }
   .position-node { width: 23.76%; }
+  .oval-magnets { min-width: 118px; }
+  .oval-magnets-label { margin-bottom:5px; }
+  .oval-magnet-buttons { gap:6px; }
+  .position-magnet-dot { left: -12px; width: 12px; height: 12px; }
   .position-input { font-size:8px; }
   .bench-grid { grid-template-columns:1fr 1fr; }
   .match-info { grid-template-columns:1fr; }

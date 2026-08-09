@@ -4,6 +4,7 @@
   const STORAGE_KEY = 'afl-coaches-whiteboard-v1';
   const NOTES_VISIBILITY_KEY = 'afl-coaches-whiteboard-notes-visible';
   const MAX_PLAYERS = 50;
+  const MAGNET_COLORS = ['black','blue','red','yellow','green'];
 
   const POSITIONS = [
     { id:'fp_left', role:'FP', label:'Forward Pocket', x:30, y:17 },
@@ -55,10 +56,11 @@
 
   function defaultState(){
     const assignments = {};
-    POSITIONS.forEach(p => assignments[p.id] = { playerId:'', text:'' });
+    const magnets = {};
+    POSITIONS.forEach(p => { assignments[p.id] = { playerId:'', text:'' }; magnets[p.id]=''; });
     BENCH.forEach(p => assignments[p.id] = { playerId:'', text:'' });
     return {
-      schemaVersion:8,
+      schemaVersion:9,
       boardId:null,
       mode:'local',
       details:defaultDetails(),
@@ -67,6 +69,7 @@
       boardTitle:'',
       notes:'',
       assignments,
+      magnets,
       updatedAt:new Date().toISOString()
     };
   }
@@ -80,9 +83,10 @@
       return {
         ...base,
         ...parsed,
-        schemaVersion:8,
+        schemaVersion:9,
         details:{...base.details, ...(parsed.details || {})},
         assignments:{...base.assignments, ...(parsed.assignments || {})},
+        magnets:{...base.magnets, ...(parsed.magnets || {})},
         roster:Array.isArray(parsed.roster) ? parsed.roster.filter(Boolean).map(cleanRosterPlayer) : []
       };
     }catch(err){
@@ -102,6 +106,7 @@
     }catch(_){ return false; }
   }
   let notesVisible=loadNotesVisible();
+  let activeMagnetColor='';
 
 
   function snapshot(){ return JSON.parse(JSON.stringify(state)); }
@@ -166,6 +171,33 @@
     return match ? {playerId:match.id,text:''} : {playerId:'',text:trimmed};
   }
 
+  function getMagnetColor(positionId){
+    const value = state.magnets?.[positionId] || '';
+    return MAGNET_COLORS.includes(value) ? value : '';
+  }
+
+  function renderMagnetPalette(){
+    document.querySelectorAll('[data-magnet-color]').forEach(btn=>{
+      const isActive = btn.dataset.magnetColor === activeMagnetColor;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+  }
+
+  function setActiveMagnetColor(color=''){
+    activeMagnetColor = MAGNET_COLORS.includes(color) ? color : '';
+    renderMagnetPalette();
+  }
+
+  function togglePositionMagnet(positionId, color){
+    if(!positionId || !MAGNET_COLORS.includes(color) || !state.magnets || !(positionId in state.magnets)) return;
+    state.magnets[positionId] = state.magnets[positionId] === color ? '' : color;
+    saveState();
+    renderPositions();
+    renderDuplicateWarnings();
+    renderMagnetPalette();
+  }
+
   function renderPlayerOptions(){
     $('playerOptions').innerHTML = activePlayers()
       .slice()
@@ -175,14 +207,30 @@
 
   function renderPositions(){
     const layer=$('positionLayer');
-    layer.innerHTML = POSITIONS.map(pos=>`
-      <div class="position-node" data-position-node="${pos.id}" style="left:${pos.x}%; top:${pos.y}%;">
+    layer.innerHTML = POSITIONS.map(pos=>{
+      const magnetColor=getMagnetColor(pos.id);
+      const magnetDot = magnetColor ? `<span class="position-magnet-dot magnet-${magnetColor}" aria-hidden="true"></span>` : '';
+      const magnetClass = magnetColor ? ' has-magnet' : '';
+      return `
+      <div class="position-node${magnetClass}" data-position-node="${pos.id}" style="left:${pos.x}%; top:${pos.y}%;">
+        ${magnetDot}
         <label class="position-role" for="pos_${pos.id}" title="${escapeHtml(pos.label)}">${pos.role}</label>
         <input id="pos_${pos.id}" class="position-input" type="text" list="playerOptions" autocomplete="off" aria-label="${escapeHtml(pos.label)} player" placeholder="Player" data-assignment="${pos.id}" value="${escapeHtml(assignmentDisplay(state.assignments[pos.id]))}" />
-      </div>`).join('');
+      </div>`;
+    }).join('');
     layer.querySelectorAll('[data-assignment]').forEach(input=>{
       input.addEventListener('change', onAssignmentChange);
       input.addEventListener('blur', onAssignmentChange);
+    });
+    layer.querySelectorAll('[data-position-node]').forEach(node=>{
+      const positionId=node.dataset.positionNode;
+      const maybeApplyMagnet=event=>{
+        if(!activeMagnetColor) return;
+        event.preventDefault();
+        event.stopPropagation();
+        togglePositionMagnet(positionId, activeMagnetColor);
+      };
+      node.addEventListener('mousedown', maybeApplyMagnet);
     });
   }
 
@@ -860,11 +908,11 @@
   }
   function mergeRemoteState(remote){
     if(!remote || typeof remote!=='object') return;
-    state={...state,...remote,details:{...state.details,...(remote.details||{})},assignments:{...state.assignments,...(remote.assignments||{})},roster:Array.isArray(remote.roster)?remote.roster.filter(Boolean).map(cleanRosterPlayer):state.roster};
+    state={...state,...remote,details:{...state.details,...(remote.details||{})},assignments:{...state.assignments,...(remote.assignments||{})},magnets:{...state.magnets,...(remote.magnets||{})},roster:Array.isArray(remote.roster)?remote.roster.filter(Boolean).map(cleanRosterPlayer):state.roster};
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
-    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare();
+    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette();
   }
   function registerServiceWorker(){
     if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});
@@ -872,6 +920,7 @@
 
   document.addEventListener('DOMContentLoaded', async()=>{
     renderAll(); applyInviteFromUrl(); bindDetails(); bindBoardTitle(); bindNotes();
+    document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));

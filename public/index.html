@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.1.10</div>
+      <div class="version">Version 1.1.11</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -55,6 +55,17 @@
           <div class="field-notes-layout">
             <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
               <button id="notesToggleBtn" class="oval-notes-toggle" type="button" aria-label="Show notes" aria-pressed="false" title="Show notes">📝 <span>Notes</span></button>
+              <div class="oval-magnets" aria-label="Swap magnets">
+                <span class="oval-magnets-label">Magnets</span>
+                <div class="oval-magnet-buttons">
+                  <button class="magnet-swatch magnet-black" type="button" data-magnet-color="black" aria-label="Black magnet" title="Black magnet"></button>
+                  <button class="magnet-swatch magnet-blue" type="button" data-magnet-color="blue" aria-label="Blue magnet" title="Blue magnet"></button>
+                  <button class="magnet-swatch magnet-red" type="button" data-magnet-color="red" aria-label="Red magnet" title="Red magnet"></button>
+                  <button class="magnet-swatch magnet-yellow" type="button" data-magnet-color="yellow" aria-label="Yellow magnet" title="Yellow magnet"></button>
+                  <button class="magnet-swatch magnet-green" type="button" data-magnet-color="green" aria-label="Green magnet" title="Green magnet"></button>
+                </div>
+                <div class="oval-magnets-help">Select a colour, then tap a position.</div>
+              </div>
               <svg class="field-markings" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
                 <ellipse cx="50" cy="70" rx="43" ry="58" class="field-outline" />
                 <path d="M 21 34 Q 50 61 79 34" class="field-arc field-arc-top" />
