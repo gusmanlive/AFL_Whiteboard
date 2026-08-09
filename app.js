@@ -6,30 +6,30 @@
   const INITIAL_ROWS = 22;
 
   const POSITIONS = [
-    // Forward line (top)
-    { id: 'fp_left', role: 'FP', label: 'Forward Pocket', x: 30, y: 12 },
-    { id: 'ff', role: 'FF', label: 'Full Forward', x: 50, y: 10 },
-    { id: 'fp_right', role: 'FP', label: 'Forward Pocket', x: 70, y: 12 },
+    // Forward line (top scoring end)
+    { id: 'fp_left', role: 'FP', label: 'Forward Pocket', x: 30, y: 17 },
+    { id: 'ff', role: 'FF', label: 'Full Forward', x: 50, y: 14 },
+    { id: 'fp_right', role: 'FP', label: 'Forward Pocket', x: 70, y: 17 },
     // Half forward
-    { id: 'hff_left', role: 'HFF', label: 'Half Forward Flank', x: 27, y: 28 },
-    { id: 'chf', role: 'CHF', label: 'Centre Half Forward', x: 50, y: 25 },
-    { id: 'hff_right', role: 'HFF', label: 'Half Forward Flank', x: 73, y: 28 },
-    // Centre
-    { id: 'wing_left', role: 'W', label: 'Wing', x: 19, y: 49 },
-    { id: 'centre', role: 'C', label: 'Centre', x: 50, y: 45 },
-    { id: 'wing_right', role: 'W', label: 'Wing', x: 81, y: 49 },
-    // Followers arranged around centre lower half
-    { id: 'ruck', role: 'RUCK', label: 'Ruck', x: 42, y: 57 },
-    { id: 'ruck_rover', role: 'RR', label: 'Ruck Rover', x: 58, y: 57 },
-    { id: 'rover', role: 'ROV', label: 'Rover', x: 50, y: 65 },
+    { id: 'hff_left', role: 'HFF', label: 'Half Forward Flank', x: 26, y: 33 },
+    { id: 'chf', role: 'CHF', label: 'Centre Half Forward', x: 50, y: 31 },
+    { id: 'hff_right', role: 'HFF', label: 'Half Forward Flank', x: 74, y: 33 },
+    // Centre line
+    { id: 'wing_left', role: 'W', label: 'Wing', x: 22, y: 50 },
+    { id: 'centre', role: 'C', label: 'Centre', x: 50, y: 46 },
+    { id: 'wing_right', role: 'W', label: 'Wing', x: 78, y: 50 },
+    // Followers
+    { id: 'ruck', role: 'RUCK', label: 'Ruck', x: 50, y: 56 },
+    { id: 'ruck_rover', role: 'RR', label: 'Ruck Rover', x: 37, y: 62 },
+    { id: 'rover', role: 'ROV', label: 'Rover', x: 63, y: 62 },
     // Half back
-    { id: 'hbf_left', role: 'HBF', label: 'Half Back Flank', x: 27, y: 73 },
-    { id: 'chb', role: 'CHB', label: 'Centre Half Back', x: 50, y: 76 },
-    { id: 'hbf_right', role: 'HBF', label: 'Half Back Flank', x: 73, y: 73 },
+    { id: 'hbf_left', role: 'HBF', label: 'Half Back Flank', x: 26, y: 76 },
+    { id: 'chb', role: 'CHB', label: 'Centre Half Back', x: 50, y: 78 },
+    { id: 'hbf_right', role: 'HBF', label: 'Half Back Flank', x: 74, y: 76 },
     // Back line (bottom)
-    { id: 'bp_left', role: 'BP', label: 'Back Pocket', x: 30, y: 89 },
-    { id: 'fb', role: 'FB', label: 'Full Back', x: 50, y: 91 },
-    { id: 'bp_right', role: 'BP', label: 'Back Pocket', x: 70, y: 89 }
+    { id: 'bp_left', role: 'BP', label: 'Back Pocket', x: 30, y: 91 },
+    { id: 'fb', role: 'FB', label: 'Full Back', x: 50, y: 94 },
+    { id: 'bp_right', role: 'BP', label: 'Back Pocket', x: 70, y: 91 }
   ];
 
   const BENCH = [
@@ -56,7 +56,7 @@
     POSITIONS.forEach(p => assignments[p.id] = { playerId: '', text: '' });
     BENCH.forEach(p => assignments[p.id] = { playerId: '', text: '' });
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       boardId: null,
       mode: 'local',
       details: { date: '', time: '', homeTeam: '', awayTeam: '', location: '' },

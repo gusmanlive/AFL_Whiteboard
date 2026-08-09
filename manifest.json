@@ -5,5 +5,13 @@
   "display": "standalone",
   "background_color": "#edf2f8",
   "theme_color": "#07172c",
-  "description": "Local-first AFL coaches whiteboard with player roster and field positions."
+  "description": "AFL coaches whiteboard with player roster, field positions and a Cloudflare-ready sharing layer.",
+  "icons": [
+    {
+      "src": "afl-whiteboard-logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 # AFL Coaches Whiteboard
 
-Version 1.0.0
+Version 1.0.2
 
 A local-first browser whiteboard for AFL coaches. This first version is deliberately backend-free so the Whiteboard and Setup workflow can be tested before adding shared Cloudflare boards.
 

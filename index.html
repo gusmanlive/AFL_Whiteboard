@@ -5,22 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#07172c" />
   <title>AFL Coaches Whiteboard</title>
+  <link rel="icon" type="image/png" href="afl-whiteboard-logo.png" />
+  <link rel="apple-touch-icon" href="afl-whiteboard-logo.png" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="app-header">
     <div class="brand-wrap">
-      <div class="brand-mark" aria-hidden="true">
-        <span class="ball">AFL</span>
+      <div class="brand-mark">
+        <img src="afl-whiteboard-logo.png" alt="AFL Whiteboard logo" />
       </div>
       <div>
         <h1>AFL COACHES WHITEBOARD</h1>
-        <p>Gumball Spec • Local coaching board</p>
+        <p>Gumball Spec • All rights reserved</p>
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.0.0</div>
+      <div class="version">Version 1.0.2</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -51,12 +53,23 @@
           </div>
 
           <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
-            <div class="centre-square" aria-hidden="true"></div>
-            <div class="centre-circle" aria-hidden="true"></div>
-            <div class="goal-line goal-top" aria-hidden="true"></div>
-            <div class="goal-line goal-bottom" aria-hidden="true"></div>
-            <div class="arc arc-top" aria-hidden="true"></div>
-            <div class="arc arc-bottom" aria-hidden="true"></div>
+            <svg class="field-markings" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+              <ellipse cx="50" cy="70" rx="43" ry="58" class="field-outline" />
+              <path d="M 21 34 Q 50 61 79 34" class="field-arc" />
+              <path d="M 21 106 Q 50 79 79 106" class="field-arc" />
+              <rect x="31" y="57" width="38" height="26" class="field-square" />
+              <circle cx="50" cy="70" r="4.3" class="field-circle" />
+              <rect x="46" y="12" width="8" height="8" class="goal-square" />
+              <rect x="46" y="120" width="8" height="8" class="goal-square" />
+              <line x1="48" y1="2" x2="48" y2="12" class="goal-post" />
+              <line x1="52" y1="2" x2="52" y2="12" class="goal-post" />
+              <line x1="38" y1="7" x2="38" y2="16" class="behind-post" />
+              <line x1="62" y1="7" x2="62" y2="16" class="behind-post" />
+              <line x1="48" y1="128" x2="48" y2="138" class="goal-post" />
+              <line x1="52" y1="128" x2="52" y2="138" class="goal-post" />
+              <line x1="38" y1="124" x2="38" y2="133" class="behind-post" />
+              <line x1="62" y1="124" x2="62" y2="133" class="behind-post" />
+            </svg>
             <div id="positionLayer"></div>
           </div>
 
@@ -168,7 +181,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.0.0</span>
+    <span>AFL Coaches Whiteboard • v1.0.2</span>
   </footer>
 
   <script src="sync-adapter.js"></script>
