@@ -1038,6 +1038,224 @@
     }
   }
 
+  let generatedBoardImage = null;
+
+  function boardImageFilename(){
+    const title=(state.boardTitle || state.details.homeTeam || 'AFL-Whiteboard').trim();
+    const date=(state.details.date || '').trim();
+    const clean=title.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,55) || 'AFL-Whiteboard';
+    return `${clean}${date?`-${date}`:''}.png`;
+  }
+
+  function roundedRectPath(ctx,x,y,w,h,r){
+    const radius=Math.max(0,Math.min(r,w/2,h/2));
+    ctx.beginPath();
+    ctx.moveTo(x+radius,y);
+    ctx.arcTo(x+w,y,x+w,y+h,radius);
+    ctx.arcTo(x+w,y+h,x,y+h,radius);
+    ctx.arcTo(x,y+h,x,y,radius);
+    ctx.arcTo(x,y,x+w,y,radius);
+    ctx.closePath();
+  }
+
+  function drawFittedText(ctx,text,x,y,maxWidth,fontSize,fontWeight='700',color='#0b1728'){
+    const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+    let size=fontSize;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle=color;
+    while(size>12){
+      ctx.font=`${fontWeight} ${size}px ${family}`;
+      if(ctx.measureText(text).width<=maxWidth) break;
+      size-=1;
+    }
+    ctx.fillText(text,x,y,maxWidth);
+  }
+
+  function canvasPointFromField(x,y,width,height){
+    return {x:(x/100)*width,y:(y/140)*height};
+  }
+
+  function drawQuadraticFieldPath(ctx,start,control,end,width,height){
+    const a=canvasPointFromField(start[0],start[1],width,height);
+    const b=canvasPointFromField(control[0],control[1],width,height);
+    const c=canvasPointFromField(end[0],end[1],width,height);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.quadraticCurveTo(b.x,b.y,c.x,c.y); ctx.stroke();
+  }
+
+  function currentPositionText(positionId){
+    const input=$(`pos_${positionId}`);
+    if(input) return String(input.value||'').trim();
+    return assignmentDisplay(state.assignments[positionId]);
+  }
+
+  function renderOvalToCanvas(){
+    const width=1200;
+    const height=Math.round(width/0.72);
+    const canvas=document.createElement('canvas');
+    canvas.width=width;
+    canvas.height=height;
+    const ctx=canvas.getContext('2d');
+    const scale=width/760;
+    const corner=16*scale;
+
+    ctx.save();
+    roundedRectPath(ctx,0,0,width,height,corner);
+    ctx.clip();
+    const grass=ctx.createLinearGradient(0,0,0,height);
+    grass.addColorStop(0,'#7cc242');
+    grass.addColorStop(1,'#73b83c');
+    ctx.fillStyle=grass;
+    ctx.fillRect(0,0,width,height);
+    ctx.restore();
+
+    // Match the live oval's field markings, without UI controls.
+    const centre=canvasPointFromField(50,70,width,height);
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle='rgba(255,255,255,0.98)';
+    ctx.lineWidth=1.7*(width/100);
+    ctx.beginPath();
+    ctx.ellipse(centre.x,centre.y,43*(width/100),58*(height/140),0,0,Math.PI*2);
+    ctx.stroke();
+
+    ctx.lineWidth=1.45*(width/100);
+    ctx.strokeStyle='#1769d2';
+    drawQuadraticFieldPath(ctx,[21,34],[50,61],[79,34],width,height);
+    ctx.strokeStyle='#d62828';
+    drawQuadraticFieldPath(ctx,[21,106],[50,79],[79,106],width,height);
+
+    ctx.strokeStyle='rgba(255,255,255,0.98)';
+    ctx.lineWidth=1.15*(width/100);
+    const sq=canvasPointFromField(31,57,width,height);
+    const sq2=canvasPointFromField(69,83,width,height);
+    ctx.strokeRect(sq.x,sq.y,sq2.x-sq.x,sq2.y-sq.y);
+    ctx.beginPath();
+    ctx.ellipse(centre.x,centre.y,4.3*(width/100),4.3*(height/140),0,0,Math.PI*2);
+    ctx.stroke();
+
+    const inputW=Math.round(122*scale);
+    const inputH=Math.round(34*scale);
+    const inputRadius=Math.round(7*scale);
+    const labelFont=Math.round(12*scale);
+    const playerFont=Math.round(11*scale);
+    const labelPadX=Math.round(7*scale);
+    const labelH=Math.round(22*scale);
+    const labelGap=Math.round(4*scale);
+    const magnetSize=Math.round(18*scale);
+    const magnetGap=Math.round(5*scale);
+    const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+    const magnetColors={black:'#111827',blue:'#2563eb',red:'#dc2626',yellow:'#facc15',green:'#16a34a',pink:'#ec4899'};
+
+    POSITIONS.forEach(pos=>{
+      const cx=(pos.x/100)*width;
+      const cy=(pos.y/100)*height;
+      const playerText=currentPositionText(pos.id) || 'Player';
+      const magnet=getMagnet(pos.id);
+
+      ctx.font=`900 ${labelFont}px ${family}`;
+      const roleText=pos.role;
+      const roleW=Math.ceil(ctx.measureText(roleText).width + labelPadX*2);
+      const rowW=roleW + (magnet ? magnetGap+magnetSize : 0);
+      const rowX=cx-rowW/2;
+      const roleX=rowX;
+      const roleY=cy-(inputH/2)-labelGap-labelH;
+
+      roundedRectPath(ctx,roleX,roleY,roleW,labelH,labelH/2);
+      ctx.fillStyle='rgba(6,18,33,0.84)';
+      ctx.fill();
+      drawFittedText(ctx,roleText,roleX+roleW/2,roleY+labelH/2,roleW-labelPadX*2,labelFont,'900','#ffffff');
+
+      if(magnet){
+        const mx=roleX+roleW+magnetGap+magnetSize/2;
+        const my=roleY+labelH/2;
+        ctx.beginPath(); ctx.arc(mx,my,magnetSize/2,0,Math.PI*2);
+        ctx.fillStyle=magnetColors[magnet.color] || '#111827'; ctx.fill();
+        ctx.lineWidth=Math.max(2,2*scale); ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.stroke();
+        drawFittedText(ctx,String(magnet.number),mx,my,magnetSize-5*scale,Math.round(10*scale),'900','#ffffff');
+      }
+
+      roundedRectPath(ctx,cx-inputW/2,cy-inputH/2,inputW,inputH,inputRadius);
+      ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.fill();
+      ctx.lineWidth=Math.max(1,scale); ctx.strokeStyle='rgba(255,255,255,0.92)'; ctx.stroke();
+      drawFittedText(ctx,playerText,cx,cy,inputW-14*scale,playerFont,'700','#0b1728');
+    });
+
+    return canvas;
+  }
+
+  function canvasToBlob(canvas){
+    return new Promise((resolve,reject)=>{
+      canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not create PNG image.')),'image/png',1);
+    });
+  }
+
+  function setBoardImageStatus(message='',type=''){
+    const el=$('boardImageStatus');
+    if(!el) return;
+    el.textContent=message;
+    el.className=`image-share-status${type?` ${type}`:''}`;
+  }
+
+  function closeBoardImageModal(){
+    const modal=$('boardImageModal');
+    if(modal) modal.hidden=true;
+    document.body.classList.remove('image-share-open');
+    if(generatedBoardImage?.url) URL.revokeObjectURL(generatedBoardImage.url);
+    generatedBoardImage=null;
+    if($('boardImagePreview')) $('boardImagePreview').removeAttribute('src');
+    setBoardImageStatus('');
+  }
+
+  async function openBoardImageModal(){
+    try{
+      document.activeElement?.blur?.();
+      const canvas=renderOvalToCanvas();
+      const blob=await canvasToBlob(canvas);
+      const file=new File([blob],boardImageFilename(),{type:'image/png'});
+      const url=URL.createObjectURL(blob);
+      if(generatedBoardImage?.url) URL.revokeObjectURL(generatedBoardImage.url);
+      generatedBoardImage={blob,file,url};
+      $('boardImagePreview').src=url;
+      $('boardImageModal').hidden=false;
+      document.body.classList.add('image-share-open');
+      setBoardImageStatus('Oval image created locally on this device.','success');
+    }catch(error){
+      setShareMessage(error?.message || 'Could not create the oval image.','error');
+    }
+  }
+
+  async function shareGeneratedBoardImage(){
+    if(!generatedBoardImage) return;
+    const {file}=generatedBoardImage;
+    try{
+      if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+        await navigator.share({
+          title:'AFL Coaches Whiteboard',
+          text: state.boardTitle ? `${state.boardTitle} – AFL Coaches Whiteboard` : 'AFL Coaches Whiteboard',
+          files:[file]
+        });
+        setBoardImageStatus('Image sharing opened.','success');
+        return;
+      }
+      setBoardImageStatus('Image file sharing is not supported by this browser. Use Save PNG instead.','error');
+    }catch(error){
+      if(error?.name==='AbortError') return;
+      setBoardImageStatus(error?.message || 'Could not open image sharing.','error');
+    }
+  }
+
+  function saveGeneratedBoardImage(){
+    if(!generatedBoardImage) return;
+    const link=document.createElement('a');
+    link.href=generatedBoardImage.url;
+    link.download=generatedBoardImage.file.name;
+    link.rel='noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setBoardImageStatus('PNG save/download started.','success');
+  }
+
   function resetAll(){
     if(!confirm('Reset all match details, team list, weather, notes and whiteboard positions?')) return;
     state=defaultState(); saveState(); renderAll(); setTeamListStatus(''); setWeatherStatus(''); setTab('setup');
@@ -1059,6 +1277,12 @@
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
+    $('shareImageBtn')?.addEventListener('click',openBoardImageModal);
+    $('shareGeneratedImageBtn')?.addEventListener('click',shareGeneratedBoardImage);
+    $('saveGeneratedImageBtn')?.addEventListener('click',saveGeneratedBoardImage);
+    $('closeImageModalBtn')?.addEventListener('click',closeBoardImageModal);
+    $('cancelGeneratedImageBtn')?.addEventListener('click',closeBoardImageModal);
+    document.querySelectorAll('[data-close-image-modal]').forEach(el=>el.addEventListener('click',closeBoardImageModal));
     $('addBenchBtn')?.addEventListener('click',addBenchPosition);
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));

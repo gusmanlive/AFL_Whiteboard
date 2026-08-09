@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.3.3</div>
+      <div class="version">Version 1.3.4</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -54,7 +54,10 @@
 
           <div class="field-notes-layout">
             <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
-              <button id="notesToggleBtn" class="oval-notes-toggle" type="button" aria-label="Show notes" aria-pressed="false" title="Show notes">📝 <span>Notes</span></button>
+              <div class="oval-top-actions" aria-label="Whiteboard actions">
+                <button id="shareImageBtn" class="oval-share-image" type="button" aria-label="Share oval image" title="Create image of oval">📷 <span>Share</span></button>
+                <button id="notesToggleBtn" class="oval-notes-toggle" type="button" aria-label="Show notes" aria-pressed="false" title="Show notes">📝 <span>Notes</span></button>
+              </div>
               <div id="ovalMagnets" class="oval-magnets" aria-label="Swap magnets">
                 <div class="oval-magnets-header">
                   <span class="oval-magnets-label">Magnets</span>
@@ -262,11 +265,33 @@
   </main>
 
 
+  <div id="boardImageModal" class="image-share-modal" hidden role="dialog" aria-modal="true" aria-labelledby="boardImageModalTitle">
+    <div class="image-share-backdrop" data-close-image-modal></div>
+    <section class="image-share-panel">
+      <div class="image-share-heading">
+        <div>
+          <span class="eyebrow">BOARD IMAGE</span>
+          <h2 id="boardImageModalTitle">Oval Image</h2>
+        </div>
+        <button id="closeImageModalBtn" class="image-share-close" type="button" aria-label="Close image preview">×</button>
+      </div>
+      <div class="image-share-preview-wrap">
+        <img id="boardImagePreview" class="image-share-preview" alt="Preview of AFL whiteboard oval" />
+      </div>
+      <div id="boardImageStatus" class="image-share-status" role="status" aria-live="polite"></div>
+      <div class="image-share-actions">
+        <button id="shareGeneratedImageBtn" class="btn primary" type="button">📤 Share Image</button>
+        <button id="saveGeneratedImageBtn" class="btn secondary" type="button">⬇ Save PNG</button>
+        <button id="cancelGeneratedImageBtn" class="btn secondary" type="button">Cancel</button>
+      </div>
+    </section>
+  </div>
+
   <datalist id="playerOptions"></datalist>
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.3.3</span>
+    <span>AFL Coaches Whiteboard • v1.3.4</span>
   </footer>
 
   <script src="sync-adapter.js"></script>
