@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07172c" />
+  <title>AFL Coaches Whiteboard</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-wrap">
+      <div class="brand-mark" aria-hidden="true">
+        <span class="ball">AFL</span>
+      </div>
+      <div>
+        <h1>AFL COACHES WHITEBOARD</h1>
+        <p>Gumball Spec • Local coaching board</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="version">Version 1.0.0</div>
+      <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <nav class="tabs" aria-label="Application tabs">
+      <button class="tab active" type="button" data-tab="whiteboard">Whiteboard</button>
+      <button class="tab" type="button" data-tab="setup">Setup</button>
+    </nav>
+
+    <section id="whiteboard" class="tab-panel active">
+      <div class="status-row">
+        <div>
+          <span class="eyebrow">BOARD STATUS</span>
+          <span class="status-pill local">LOCAL BOARD</span>
+        </div>
+        <div class="autosave">Autosaves on this device</div>
+      </div>
+
+      <div class="whiteboard-layout">
+        <section class="field-card card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">TEAM BOARD</span>
+              <h2>Starting 18</h2>
+            </div>
+            <p>Select from the Setup roster or type a name/role.</p>
+          </div>
+
+          <div id="oval" class="oval" aria-label="AFL oval with 18 positions">
+            <div class="centre-square" aria-hidden="true"></div>
+            <div class="centre-circle" aria-hidden="true"></div>
+            <div class="goal-line goal-top" aria-hidden="true"></div>
+            <div class="goal-line goal-bottom" aria-hidden="true"></div>
+            <div class="arc arc-top" aria-hidden="true"></div>
+            <div class="arc arc-bottom" aria-hidden="true"></div>
+            <div id="positionLayer"></div>
+          </div>
+
+          <div class="bench-wrap">
+            <div class="section-heading bench-heading">
+              <div>
+                <span class="eyebrow">INTERCHANGE</span>
+                <h2>Bench</h2>
+              </div>
+              <span class="bench-count">4 positions</span>
+            </div>
+            <div id="benchGrid" class="bench-grid"></div>
+          </div>
+        </section>
+
+        <aside class="info-card card">
+          <div class="section-heading compact">
+            <div>
+              <span class="eyebrow">MATCH</span>
+              <h2>Information</h2>
+            </div>
+          </div>
+          <dl class="match-info">
+            <div><dt>Date</dt><dd id="infoDate">—</dd></div>
+            <div><dt>Time</dt><dd id="infoTime">—</dd></div>
+            <div><dt>Home Team</dt><dd id="infoHome">—</dd></div>
+            <div><dt>Away Team</dt><dd id="infoAway">—</dd></div>
+            <div><dt>Location</dt><dd id="infoLocation">—</dd></div>
+          </dl>
+          <button id="editSetupBtn" class="btn primary full" type="button">Edit Setup</button>
+
+          <div class="sharing-preview">
+            <span class="eyebrow">SHARING LAYER</span>
+            <h3>Cloud-ready structure</h3>
+            <p>This version is local only. Board state is isolated behind a sync adapter ready for Cloudflare Workers / Durable Objects.</p>
+            <button class="btn secondary full" type="button" disabled>Share Board — next version</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="setup" class="tab-panel">
+      <div class="setup-grid">
+        <section class="card setup-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">MATCH SETUP</span>
+              <h2>Match Details</h2>
+            </div>
+            <p>These fields appear in the Whiteboard information panel.</p>
+          </div>
+
+          <div class="form-grid">
+            <label>Date
+              <input id="matchDate" type="date" autocomplete="off" />
+            </label>
+            <label>Time
+              <input id="matchTime" type="time" autocomplete="off" />
+            </label>
+            <label>Home Team
+              <input id="homeTeam" type="text" placeholder="e.g. South Gawler" autocomplete="off" />
+            </label>
+            <label>Away Team
+              <input id="awayTeam" type="text" placeholder="e.g. Gawler Central" autocomplete="off" />
+            </label>
+            <label class="wide">Location
+              <input id="location" type="text" placeholder="e.g. South Gawler Oval" autocomplete="off" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card roster-card">
+          <div class="section-heading roster-heading">
+            <div>
+              <span class="eyebrow">TEAM LIST</span>
+              <h2>Player Roster</h2>
+            </div>
+            <div class="roster-actions">
+              <button id="addPlayerBtn" class="btn primary" type="button">+ Add Player</button>
+              <button id="clearRosterBtn" class="btn secondary" type="button">Clear Roster</button>
+            </div>
+          </div>
+          <p class="helper">Enter player number, first name and surname. Up to 50 players can be stored. Player numbers should be unique.</p>
+
+          <div class="roster-table-wrap">
+            <table class="roster-table">
+              <thead>
+                <tr>
+                  <th class="row-num">#</th>
+                  <th>Number</th>
+                  <th>First Name</th>
+                  <th>Surname</th>
+                  <th class="remove-col"></th>
+                </tr>
+              </thead>
+              <tbody id="rosterBody"></tbody>
+            </table>
+          </div>
+          <div class="roster-footer">
+            <span id="rosterCount">0 / 50 players</span>
+            <button id="goWhiteboardBtn" class="btn primary" type="button">Open Whiteboard</button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <datalist id="playerOptions"></datalist>
+
+  <footer>
+    <span>© Gumball Spec – All rights reserved</span>
+    <span>AFL Coaches Whiteboard • v1.0.0</span>
+  </footer>
+
+  <script src="sync-adapter.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
