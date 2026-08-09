@@ -25,9 +25,9 @@
     { id:'hbf_left', role:'HBF', label:'Half Back Flank', x:23, y:71.5 },
     { id:'chb', role:'CHB', label:'Centre Half Back', x:50, y:70 },
     { id:'hbf_right', role:'HBF', label:'Half Back Flank', x:77, y:71.5 },
-    { id:'bp_left', role:'BP', label:'Back Pocket', x:26, y:84 },
+    { id:'bp_left', role:'BP', label:'Back Pocket', x:26, y:83 },
     { id:'fb', role:'FB', label:'Full Back', x:50, y:89.5 },
-    { id:'bp_right', role:'BP', label:'Back Pocket', x:74, y:84 }
+    { id:'bp_right', role:'BP', label:'Back Pocket', x:74, y:83 }
   ];
 
   function benchSlots(count=DEFAULT_BENCH_COUNT){
