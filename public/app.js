@@ -5,6 +5,8 @@
   const NOTES_VISIBILITY_KEY = 'afl-coaches-whiteboard-notes-visible';
   const MAGNETS_COLLAPSED_KEY = 'afl-coaches-whiteboard-magnets-collapsed';
   const MAX_PLAYERS = 50;
+  const DEFAULT_BENCH_COUNT = 4;
+  const MAX_BENCH_COUNT = 12;
   const MAGNET_COLORS = ['black','blue','red','yellow','green'];
 
   const POSITIONS = [
@@ -28,12 +30,10 @@
     { id:'bp_right', role:'BP', label:'Back Pocket', x:70, y:91 }
   ];
 
-  const BENCH = [
-    { id:'bench1', label:'Interchange 1' },
-    { id:'bench2', label:'Interchange 2' },
-    { id:'bench3', label:'Interchange 3' },
-    { id:'bench4', label:'Interchange 4' }
-  ];
+  function benchSlots(count=DEFAULT_BENCH_COUNT){
+    const safe=Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(count)||DEFAULT_BENCH_COUNT));
+    return Array.from({length:safe},(_,i)=>({id:`bench${i+1}`,label:`Interchange ${i+1}`}));
+  }
 
   const $ = id => document.getElementById(id);
   const syncAdapter = window.WhiteboardSync.createAdapter();
@@ -59,9 +59,9 @@
     const assignments = {};
     const magnets = {};
     POSITIONS.forEach(p => { assignments[p.id] = { playerId:'', text:'' }; magnets[p.id]=''; });
-    BENCH.forEach(p => assignments[p.id] = { playerId:'', text:'' });
+    benchSlots(DEFAULT_BENCH_COUNT).forEach(p => { assignments[p.id] = { playerId:'', text:'' }; magnets[p.id]=''; });
     return {
-      schemaVersion:9,
+      schemaVersion:10,
       boardId:null,
       mode:'local',
       details:defaultDetails(),
@@ -69,8 +69,10 @@
       teamListText:'',
       boardTitle:'',
       notes:'',
+      benchCount:DEFAULT_BENCH_COUNT,
       assignments,
       magnets,
+      magnetNextNumber:{black:1,blue:1,red:1,yellow:1,green:1},
       updatedAt:new Date().toISOString()
     };
   }
@@ -81,13 +83,37 @@
       if(!raw) return defaultState();
       const parsed = JSON.parse(raw);
       const base = defaultState();
+      const benchCount=Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(parsed.benchCount)||DEFAULT_BENCH_COUNT));
+      const assignments={...base.assignments, ...(parsed.assignments || {})};
+      const rawMagnets={...base.magnets, ...(parsed.magnets || {})};
+      benchSlots(benchCount).forEach(slot=>{
+        if(!assignments[slot.id]) assignments[slot.id]={playerId:'',text:''};
+        if(!(slot.id in rawMagnets)) rawMagnets[slot.id]='';
+      });
+      const used={black:new Set(),blue:new Set(),red:new Set(),yellow:new Set(),green:new Set()};
+      const magnets={};
+      [...POSITIONS,...benchSlots(benchCount)].forEach(slot=>{
+        const value=rawMagnets[slot.id];
+        if(value && typeof value==='object' && MAGNET_COLORS.includes(value.color)){
+          let number=Number(value.number);
+          if(![1,2,3].includes(number) || used[value.color].has(number)) number=[1,2,3].find(n=>!used[value.color].has(n))||0;
+          if(number){ magnets[slot.id]={color:value.color,number}; used[value.color].add(number); }
+          else magnets[slot.id]='';
+        }else if(MAGNET_COLORS.includes(value)){
+          const number=[1,2,3].find(n=>!used[value].has(n))||0;
+          if(number){ magnets[slot.id]={color:value,number}; used[value].add(number); }
+          else magnets[slot.id]='';
+        }else magnets[slot.id]='';
+      });
       return {
         ...base,
         ...parsed,
-        schemaVersion:9,
+        schemaVersion:10,
+        benchCount,
         details:{...base.details, ...(parsed.details || {})},
-        assignments:{...base.assignments, ...(parsed.assignments || {})},
-        magnets:{...base.magnets, ...(parsed.magnets || {})},
+        assignments,
+        magnets,
+        magnetNextNumber:{...base.magnetNextNumber,...(parsed.magnetNextNumber||{})},
         roster:Array.isArray(parsed.roster) ? parsed.roster.filter(Boolean).map(cleanRosterPlayer) : []
       };
     }catch(err){
@@ -180,49 +206,74 @@
     return match ? {playerId:match.id,text:''} : {playerId:'',text:trimmed};
   }
 
-  function getMagnetColor(positionId){
-    const value = state.magnets?.[positionId] || '';
-    return MAGNET_COLORS.includes(value) ? value : '';
+  function getMagnet(slotId){
+    const value=state.magnets?.[slotId];
+    if(value && typeof value==='object' && MAGNET_COLORS.includes(value.color) && [1,2,3].includes(Number(value.number))) return {color:value.color,number:Number(value.number)};
+    if(MAGNET_COLORS.includes(value)) return {color:value,number:1};
+    return null;
   }
+
+  function allMagnetSlotIds(){ return [...POSITIONS.map(p=>p.id),...benchSlots(state.benchCount).map(p=>p.id)]; }
+  function magnetCount(color){ return allMagnetSlotIds().filter(id=>getMagnet(id)?.color===color).length; }
 
   function renderMagnetPalette(){
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>{
-      const isActive = btn.dataset.magnetColor === activeMagnetColor;
-      btn.classList.toggle('is-active', isActive);
-      btn.setAttribute('aria-pressed', String(isActive));
+      const color=btn.dataset.magnetColor;
+      const isActive=color===activeMagnetColor;
+      btn.classList.toggle('is-active',isActive);
+      btn.setAttribute('aria-pressed',String(isActive));
+      btn.textContent=magnetCount(color)||'';
     });
   }
 
   function setActiveMagnetColor(color=''){
-    activeMagnetColor = MAGNET_COLORS.includes(color) ? color : '';
+    activeMagnetColor=MAGNET_COLORS.includes(color)?color:'';
     renderMagnetPalette();
   }
 
   function renderMagnetPaletteVisibility(){
     const panel=$('ovalMagnets');
     const toggleBtn=$('magnetsToggleBtn');
-    if(panel) panel.classList.toggle('is-collapsed', magnetsCollapsed);
+    if(panel) panel.classList.toggle('is-collapsed',magnetsCollapsed);
     if(toggleBtn){
-      toggleBtn.textContent = magnetsCollapsed ? '▾' : '▴';
-      toggleBtn.setAttribute('aria-expanded', String(!magnetsCollapsed));
-      toggleBtn.setAttribute('aria-label', magnetsCollapsed ? 'Expand magnets' : 'Collapse magnets');
-      toggleBtn.title = magnetsCollapsed ? 'Expand magnets' : 'Collapse magnets';
+      toggleBtn.textContent=magnetsCollapsed?'▾':'▴';
+      toggleBtn.setAttribute('aria-expanded',String(!magnetsCollapsed));
+      toggleBtn.setAttribute('aria-label',magnetsCollapsed?'Expand magnets':'Collapse magnets');
+      toggleBtn.title=magnetsCollapsed?'Expand magnets':'Collapse magnets';
     }
   }
 
   function setMagnetsCollapsed(collapsed){
     magnetsCollapsed=Boolean(collapsed);
-    try{ localStorage.setItem(MAGNETS_COLLAPSED_KEY, String(magnetsCollapsed)); }catch(_){ }
+    try{ localStorage.setItem(MAGNETS_COLLAPSED_KEY,String(magnetsCollapsed)); }catch(_){}
     renderMagnetPaletteVisibility();
   }
 
-  function togglePositionMagnet(positionId, color){
-    if(!positionId || !MAGNET_COLORS.includes(color) || !state.magnets || !(positionId in state.magnets)) return;
-    state.magnets[positionId] = state.magnets[positionId] === color ? '' : color;
-    saveState();
-    renderPositions();
-    renderDuplicateWarnings();
-    renderMagnetPalette();
+  function toggleSlotMagnet(slotId,color){
+    if(!slotId || !MAGNET_COLORS.includes(color)) return;
+    if(!state.magnets) state.magnets={};
+    if(!state.magnetNextNumber) state.magnetNextNumber={black:1,blue:1,red:1,yellow:1,green:1};
+    const current=getMagnet(slotId);
+    if(current?.color===color){
+      state.magnets[slotId]='';
+      saveState(); renderPositions(); renderBench(); renderDuplicateWarnings(); renderMagnetPalette();
+      return;
+    }
+    if(current) state.magnets[slotId]='';
+    const same=allMagnetSlotIds().map(id=>({id,mag:getMagnet(id)})).filter(x=>x.mag?.color===color && x.id!==slotId);
+    const used=new Set(same.map(x=>x.mag.number));
+    let number;
+    if(same.length<3){
+      number=[1,2,3].find(n=>!used.has(n))||1;
+    }else{
+      number=Number(state.magnetNextNumber[color])||1;
+      if(![1,2,3].includes(number)) number=1;
+      const replace=same.find(x=>x.mag.number===number);
+      if(replace) state.magnets[replace.id]='';
+    }
+    state.magnets[slotId]={color,number};
+    state.magnetNextNumber[color]=(number%3)+1;
+    saveState(); renderPositions(); renderBench(); renderDuplicateWarnings(); renderMagnetPalette();
   }
 
   function renderPlayerOptions(){
@@ -235,12 +286,12 @@
   function renderPositions(){
     const layer=$('positionLayer');
     layer.innerHTML = POSITIONS.map(pos=>{
-      const magnetColor=getMagnetColor(pos.id);
-      const magnetDot = magnetColor ? `<span class="position-magnet-dot magnet-${magnetColor}" aria-hidden="true"></span>` : '';
-      const magnetClass = magnetColor ? ' has-magnet' : '';
+      const magnet=getMagnet(pos.id);
+      const magnetDot=magnet?`<span class="position-magnet-dot magnet-${magnet.color}" aria-hidden="true">${magnet.number}</span>`:'';
+      const magnetClass=magnet?' has-magnet':'';
       return `
       <div class="position-node${magnetClass}" data-position-node="${pos.id}" style="left:${pos.x}%; top:${pos.y}%;">
-        <div class="position-label-row">${magnetDot}<label class="position-role" for="pos_${pos.id}" title="${escapeHtml(pos.label)}">${pos.role}</label></div>
+        <div class="position-label-row"><label class="position-role" for="pos_${pos.id}" title="${escapeHtml(pos.label)}">${pos.role}</label>${magnetDot}</div>
         <input id="pos_${pos.id}" class="position-input" type="text" list="playerOptions" autocomplete="off" aria-label="${escapeHtml(pos.label)} player" placeholder="Player" data-assignment="${pos.id}" value="${escapeHtml(assignmentDisplay(state.assignments[pos.id]))}" />
       </div>`;
     }).join('');
@@ -254,22 +305,48 @@
         if(!activeMagnetColor) return;
         event.preventDefault();
         event.stopPropagation();
-        togglePositionMagnet(positionId, activeMagnetColor);
+        toggleSlotMagnet(positionId,activeMagnetColor);
       };
       node.addEventListener('mousedown', maybeApplyMagnet);
     });
   }
 
   function renderBench(){
-    $('benchGrid').innerHTML = BENCH.map(slot=>`
-      <div class="bench-slot" data-bench-node="${slot.id}">
-        <label for="bench_${slot.id}">${slot.label}</label>
-        <input id="bench_${slot.id}" type="text" list="playerOptions" autocomplete="off" placeholder="Player" data-assignment="${slot.id}" value="${escapeHtml(assignmentDisplay(state.assignments[slot.id]))}" />
-      </div>`).join('');
-    $('benchGrid').querySelectorAll('[data-assignment]').forEach(input=>{
-      input.addEventListener('change', onAssignmentChange);
-      input.addEventListener('blur', onAssignmentChange);
+    const slots=benchSlots(state.benchCount);
+    slots.forEach(slot=>{
+      if(!state.assignments[slot.id]) state.assignments[slot.id]={playerId:'',text:''};
+      if(!(slot.id in state.magnets)) state.magnets[slot.id]='';
     });
+    $('benchGrid').innerHTML=slots.map(slot=>{
+      const magnet=getMagnet(slot.id);
+      const dot=magnet?`<span class="bench-magnet-dot magnet-${magnet.color}" aria-hidden="true">${magnet.number}</span>`:'';
+      return `<div class="bench-slot" data-bench-node="${slot.id}">
+        <div class="bench-label-row" data-bench-magnet-target="${slot.id}"><label for="bench_${slot.id}">${slot.label}</label>${dot}</div>
+        <input id="bench_${slot.id}" type="text" list="playerOptions" autocomplete="off" placeholder="Player" data-assignment="${slot.id}" value="${escapeHtml(assignmentDisplay(state.assignments[slot.id]))}" />
+      </div>`;
+    }).join('');
+    if($('benchCount')) $('benchCount').textContent=`${slots.length} position${slots.length===1?'':'s'}`;
+    if($('addBenchBtn')) $('addBenchBtn').disabled=slots.length>=MAX_BENCH_COUNT;
+    $('benchGrid').querySelectorAll('[data-assignment]').forEach(input=>{
+      input.addEventListener('change',onAssignmentChange);
+      input.addEventListener('blur',onAssignmentChange);
+    });
+    $('benchGrid').querySelectorAll('[data-bench-magnet-target]').forEach(row=>{
+      row.addEventListener('mousedown',event=>{
+        if(!activeMagnetColor) return;
+        event.preventDefault(); event.stopPropagation();
+        toggleSlotMagnet(row.dataset.benchMagnetTarget,activeMagnetColor);
+      });
+    });
+  }
+
+  function addBenchPosition(){
+    if(state.benchCount>=MAX_BENCH_COUNT) return;
+    state.benchCount=Math.min(MAX_BENCH_COUNT,(Number(state.benchCount)||DEFAULT_BENCH_COUNT)+1);
+    const slot=benchSlots(state.benchCount).at(-1);
+    if(!state.assignments[slot.id]) state.assignments[slot.id]={playerId:'',text:''};
+    if(!(slot.id in state.magnets)) state.magnets[slot.id]='';
+    saveState(); renderBench(); renderMagnetPalette();
   }
 
   function onAssignmentChange(event){
@@ -934,7 +1011,7 @@
   }
   function mergeRemoteState(remote){
     if(!remote || typeof remote!=='object') return;
-    state={...state,...remote,details:{...state.details,...(remote.details||{})},assignments:{...state.assignments,...(remote.assignments||{})},magnets:{...state.magnets,...(remote.magnets||{})},roster:Array.isArray(remote.roster)?remote.roster.filter(Boolean).map(cleanRosterPlayer):state.roster};
+    state={...state,...remote,benchCount:Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(remote.benchCount||state.benchCount)||DEFAULT_BENCH_COUNT)),details:{...state.details,...(remote.details||{})},assignments:{...state.assignments,...(remote.assignments||{})},magnets:{...state.magnets,...(remote.magnets||{})},magnetNextNumber:{...state.magnetNextNumber,...(remote.magnetNextNumber||{})},roster:Array.isArray(remote.roster)?remote.roster.filter(Boolean).map(cleanRosterPlayer):state.roster};
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
@@ -949,6 +1026,7 @@
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
+    $('addBenchBtn')?.addEventListener('click',addBenchPosition);
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));
     $('goWhiteboardBtn').addEventListener('click',()=>setTab('whiteboard'));
