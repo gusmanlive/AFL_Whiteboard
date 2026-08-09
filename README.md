@@ -1,8 +1,8 @@
-# AFL Coaches Whiteboard v1.2.1
+# AFL Coaches Whiteboard v1.2.0
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
 
-## New in v1.2.1
+## New in v1.2.0
 
 - Notes are hidden by default.
 - Notes toggle fully removes/restores the panel.

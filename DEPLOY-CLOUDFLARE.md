@@ -1,4 +1,4 @@
-# Deploy AFL Coaches Whiteboard v1.2.1 to Cloudflare Workers
+# Deploy AFL Coaches Whiteboard v1.2.0 to Cloudflare Workers
 
 This project is a **Cloudflare Worker with Static Assets + a Durable Object**. It is not a Pages-only project.
 
