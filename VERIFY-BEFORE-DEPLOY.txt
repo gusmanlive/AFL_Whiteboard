@@ -1,4 +1,4 @@
-AFL Coaches Whiteboard v1.2.2 deployment check
+AFL Coaches Whiteboard v1.2.3 deployment check
 
 1. package.json starts with: {
 2. src/worker.js starts with: import { DurableObject } from "cloudflare:workers";
