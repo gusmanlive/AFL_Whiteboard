@@ -7,7 +7,6 @@
   const BOARD_SCALE_MODE_KEY = 'afl-coaches-whiteboard-board-scale-mode';
   const BOARD_SCALE_VALUE_KEY = 'afl-coaches-whiteboard-board-scale-value';
   const BOARD_SCALE_COLLAPSED_KEY = 'afl-coaches-whiteboard-board-scale-collapsed';
-  const BOARD_LOCK_KEY = 'afl-coaches-whiteboard-board-locked';
   const MAX_PLAYERS = 50;
   const DEFAULT_BENCH_COUNT = 4;
   const MAX_BENCH_COUNT = 12;
@@ -167,10 +166,6 @@
       return saved === null ? true : saved === 'true';
     }catch(_){ return true; }
   }
-  function loadBoardLocked(){
-    try{ return localStorage.getItem(BOARD_LOCK_KEY) === 'true'; }
-    catch(_){ return false; }
-  }
 
   let notesVisible=loadNotesVisible();
   let activeMagnetColor='';
@@ -178,7 +173,7 @@
   let boardScaleMode=loadBoardScaleMode();
   let boardScaleValue=loadBoardScaleValue();
   let boardScaleCollapsed=loadBoardScaleCollapsed();
-  let boardLocked=loadBoardLocked();
+  let boardLocked=false;
   let boardFullscreen=false;
   const undoStack=[];
   const MAX_UNDO_STEPS=20;
@@ -216,29 +211,18 @@
   }
 
   function applyBoardLock(){
+    boardLocked=false;
     const card=$('fieldCard');
-    const btn=$('boardLockBtn');
-    if(card) card.classList.toggle('board-locked',boardLocked);
-    if(btn){
-      btn.setAttribute('aria-pressed',String(boardLocked));
-      btn.setAttribute('aria-label',boardLocked?'Unlock board player positions':'Lock board player positions');
-      btn.title=boardLocked?'Unlock player positions':'Lock player positions';
-      btn.innerHTML=boardLocked?'🔒 <span>Locked</span>':'🔓 <span>Lock</span>';
-    }
+    if(card) card.classList.remove('board-locked');
     document.querySelectorAll('[data-assignment]').forEach(input=>{
-      input.readOnly=boardLocked;
-      input.setAttribute('aria-readonly',String(boardLocked));
+      input.readOnly=false;
+      input.removeAttribute('aria-readonly');
     });
     const add=$('addBenchBtn');
-    if(add) add.disabled=boardLocked || state.benchCount>=MAX_BENCH_COUNT;
-    document.querySelectorAll('[data-remove-bench]').forEach(button=>button.disabled=boardLocked);
+    if(add) add.disabled=state.benchCount>=MAX_BENCH_COUNT;
+    document.querySelectorAll('[data-remove-bench]').forEach(button=>button.disabled=false);
   }
 
-  function setBoardLocked(locked){
-    boardLocked=Boolean(locked);
-    try{ localStorage.setItem(BOARD_LOCK_KEY,String(boardLocked)); }catch(_){ }
-    applyBoardLock();
-  }
 
   function renderBoardFullscreen(){
     document.body.classList.toggle('board-fullscreen',boardFullscreen);
@@ -1501,6 +1485,110 @@
     return canvas;
   }
 
+  function boardPdfFilename(){
+    const title=(state.boardTitle || state.details.homeTeam || 'AFL-Whiteboard').trim();
+    const date=(state.details.date || '').trim();
+    const clean=title.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,55) || 'AFL-Whiteboard';
+    return `${clean}${date?`-${date}`:''}.pdf`;
+  }
+
+  function renderMonochromePrintCanvas(){
+    const source=renderOvalToCanvas();
+    const canvas=document.createElement('canvas');
+    canvas.width=source.width;
+    canvas.height=source.height;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(source,0,0);
+    const image=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data=image.data;
+    // Print-friendly four-level greyscale: light grass, dark labels/lines, white player tiles.
+    for(let i=0;i<data.length;i+=4){
+      const lum=(data[i]*0.299)+(data[i+1]*0.587)+(data[i+2]*0.114);
+      let grey;
+      if(lum<70) grey=28;
+      else if(lum<130) grey=92;
+      else if(lum<215) grey=210;
+      else grey=248;
+      data[i]=grey; data[i+1]=grey; data[i+2]=grey;
+    }
+    ctx.putImageData(image,0,0);
+    return canvas;
+  }
+
+  function asciiBytes(value){ return new TextEncoder().encode(value); }
+  function concatByteArrays(parts){
+    const total=parts.reduce((sum,part)=>sum+part.length,0);
+    const output=new Uint8Array(total);
+    let offset=0;
+    parts.forEach(part=>{ output.set(part,offset); offset+=part.length; });
+    return output;
+  }
+  function dataUrlToBytes(dataUrl){
+    const base64=String(dataUrl).split(',')[1] || '';
+    const binary=atob(base64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function buildA4ImagePdf(jpegBytes,imageWidth,imageHeight){
+    const pageW=595.28, pageH=841.89, margin=18;
+    const fit=Math.min((pageW-(margin*2))/imageWidth,(pageH-(margin*2))/imageHeight);
+    const drawW=imageWidth*fit, drawH=imageHeight*fit;
+    const x=(pageW-drawW)/2, y=(pageH-drawH)/2;
+    const content=`q\n${drawW.toFixed(2)} 0 0 ${drawH.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm\n/Im0 Do\nQ\n`;
+    const objects=[];
+    objects[1]=asciiBytes('<< /Type /Catalog /Pages 2 0 R >>');
+    objects[2]=asciiBytes('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    objects[3]=asciiBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+    objects[4]=concatByteArrays([
+      asciiBytes(`<< /Type /XObject /Subtype /Image /Width ${imageWidth} /Height ${imageHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`),
+      jpegBytes,
+      asciiBytes('\nendstream')
+    ]);
+    const contentBytes=asciiBytes(content);
+    objects[5]=concatByteArrays([asciiBytes(`<< /Length ${contentBytes.length} >>\nstream\n`),contentBytes,asciiBytes('endstream')]);
+
+    const parts=[asciiBytes('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')];
+    const offsets=[0];
+    let cursor=parts[0].length;
+    for(let i=1;i<=5;i++){
+      offsets[i]=cursor;
+      const prefix=asciiBytes(`${i} 0 obj\n`);
+      const suffix=asciiBytes('\nendobj\n');
+      parts.push(prefix,objects[i],suffix);
+      cursor+=prefix.length+objects[i].length+suffix.length;
+    }
+    const xrefOffset=cursor;
+    let xref='xref\n0 6\n0000000000 65535 f \n';
+    for(let i=1;i<=5;i++) xref+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+    const trailer=`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+    parts.push(asciiBytes(xref+trailer));
+    return concatByteArrays(parts);
+  }
+
+  function createPrintablePdf(){
+    try{
+      document.activeElement?.blur?.();
+      const canvas=renderMonochromePrintCanvas();
+      const jpegBytes=dataUrlToBytes(canvas.toDataURL('image/jpeg',0.92));
+      const pdfBytes=buildA4ImagePdf(jpegBytes,canvas.width,canvas.height);
+      const blob=new Blob([pdfBytes],{type:'application/pdf'});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;
+      link.download=boardPdfFilename();
+      link.rel='noopener';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }catch(error){
+      console.error('Could not create printable PDF.',error);
+      alert('Could not create the PDF on this device. Please try again.');
+    }
+  }
+
   function canvasToBlob(canvas){
     return new Promise((resolve,reject)=>{
       canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not create PNG image.')),'image/png',1);
@@ -1590,7 +1678,7 @@
     const coarse=()=>window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints>0;
     const controlSelectors=[
       '.magnet-swatch', '.magnet-undo-btn', '.oval-magnets-label',
-      '.oval-notes-toggle', '.oval-share-image', '.oval-board-lock',
+      '.oval-notes-toggle', '.oval-share-image',
       '.board-fullscreen-btn', '.oval-scale-btn', '.oval-scale-toggle'
     ];
 
@@ -1651,7 +1739,6 @@
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
     $('undoBoardBtn')?.addEventListener('click',undoBoardAction);
-    $('boardLockBtn')?.addEventListener('click',()=>setBoardLocked(!boardLocked));
     $('fullScreenBoardBtn')?.addEventListener('click',()=>setBoardFullscreen(!boardFullscreen));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
     $('boardScaleToggleBtn')?.addEventListener('click',()=>setBoardScaleCollapsed(!boardScaleCollapsed));
@@ -1667,6 +1754,7 @@
     $('addBenchBtn')?.addEventListener('click',addBenchPosition);
     document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
     $('editSetupBtn').addEventListener('click',()=>setTab('setup'));
+    $('createPdfBtn')?.addEventListener('click',createPrintablePdf);
     $('goWhiteboardBtn').addEventListener('click',()=>setTab('whiteboard'));
     $('saveTeamListBtn').addEventListener('click',saveTeamList);
     $('clearRosterBtn').addEventListener('click',clearRoster);
@@ -1686,7 +1774,7 @@
     if(syncAdapter.onStatus) syncAdapter.onStatus(status=>{ shareStatus=status; renderShare(); });
     $('oval')?.addEventListener('mousedown',event=>{
       if(!activeMagnetColor) return;
-      if(event.target.closest?.('.position-node,.oval-magnets,.oval-top-actions,.oval-scale-controls,.oval-board-lock')) return;
+      if(event.target.closest?.('.position-node,.oval-magnets,.oval-top-actions,.oval-scale-controls')) return;
       setActiveMagnetColor('');
     });
     document.addEventListener('keydown',event=>{

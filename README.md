@@ -1,4 +1,4 @@
-# AFL Coaches Whiteboard v1.4.7
+# AFL Coaches Whiteboard v1.4.8
 
 Local-first AFL coaching whiteboard with optional real-time Cloudflare shared boards.
 

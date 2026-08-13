@@ -673,6 +673,7 @@ body.image-share-open { overflow:hidden; }
 .match-info > div { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .match-info dt { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
 .match-info dd { margin: 4px 0 0; color: var(--navy-900); font-size: 16px; font-weight: 800; word-break: break-word; }
+.create-pdf-btn { margin-top:8px; }
 .sharing-preview { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
 .sharing-preview h3 { margin: 5px 0 6px; color: var(--navy-900); font-size: 16px; }
 .sharing-preview p { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
@@ -767,12 +768,12 @@ footer {
   .board-notes textarea { min-height: 280px; }
   .section-heading { display:block; }
   .section-heading p { text-align:left; margin-top:5px; }
-  .oval { min-height: 0; aspect-ratio: .72 / 1; max-width: 100%; border-radius: 14px; }
+  .oval { min-height: 0; aspect-ratio: .66 / 1; max-width: 100%; border-radius: 14px; }
   .oval-top-actions { top:7px; right:7px; gap:5px; }
   .oval-board-lock { right:7px; bottom:7px; height:36px; padding:0 8px; font-size:10px; }
   .board-fullscreen-btn { top:10px; right:10px; width:36px; height:32px; font-size:17px; }
   body.board-fullscreen .field-card { padding:10px; }
-  body.board-fullscreen .field-notes-layout.notes-hidden .oval { width:min(100%, calc((100dvh - 165px) * .72)); }
+  body.board-fullscreen .field-notes-layout.notes-hidden .oval { width:min(100%, calc((100dvh - 165px) * .66)); }
   .oval-notes-toggle, .oval-share-image { height:45px; padding:8px 10px; font-size:11px; }
   .oval-scale-controls { bottom: 7px; gap: 5px; padding: 5px 6px; }
   .oval-scale-controls.is-collapsed { padding-right: 5px; }
@@ -800,7 +801,7 @@ footer {
 @media (max-width: 430px) {
   .ground-rain-metrics { grid-template-columns:1fr; }
   .app-header h1 { font-size:17px; }
-  .oval { aspect-ratio: .72 / 1; }
+  .oval { aspect-ratio: .66 / 1; }
   .position-node { width: calc(20.20% * var(--board-scale)); }
   .oval-magnets { min-width: 150px; }
   .oval-magnet-buttons { gap:6px; }
@@ -868,7 +869,6 @@ footer {
   .oval-magnets-label,
   .oval-notes-toggle,
   .oval-share-image,
-  .oval-board-lock,
   .board-fullscreen-btn,
   .oval-scale-btn,
   .oval-scale-toggle {
