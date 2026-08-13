@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.4.3</div>
+      <div class="version">Version 1.4.4</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -60,8 +60,7 @@
               </div>
               <div id="ovalMagnets" class="oval-magnets" aria-label="Swap magnets">
                 <div class="oval-magnets-header">
-                  <span class="oval-magnets-label">Magnets</span>
-                  <button id="magnetsToggleBtn" class="magnets-toggle-btn" type="button" aria-label="Collapse magnets" aria-expanded="true" title="Collapse magnets">▴</button>
+                  <button id="magnetsToggleBtn" class="oval-magnets-label" type="button" aria-label="Collapse magnets" aria-expanded="true" title="Collapse magnets">Magnets</button>
                 </div>
                 <div class="oval-magnets-body">
                   <div class="oval-magnet-buttons">
@@ -217,7 +216,7 @@
             </div>
           </div>
           <p class="helper team-list-help"><strong>Copy &amp; Paste a PlayHQ Line-Up here, OR enter manually using the #teamlist format (number,firstname,surname).</strong><br>
-          Maximum 50 players; player numbers must be unique. You can also paste lists where each player number is on one line and the player name is on the next line. Captain/permit markers such as (c), (vc), (dvc) and (SP) are automatically removed. The saved list populates every player selector on the Whiteboard.</p>
+          Maximum 50 players; player numbers must be unique. Captain/permit markers such as (c), (vc), (dvc) and (SP) are automatically removed. The saved list populates every player selector on the Whiteboard.</p>
           <textarea id="teamListInput" class="team-list-input" spellcheck="false" placeholder="#teamlist&#10;&#10;1,Firstname,Surname&#10;2,Firstname,Surname2&#10;3,Firstname,Surname3&#10;4,And,So-On"></textarea>
           <div class="team-list-actions">
             <button id="saveTeamListBtn" class="btn primary" type="button">Save Team List</button>
@@ -299,7 +298,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.4.3</span>
+    <span>AFL Coaches Whiteboard • v1.4.4</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

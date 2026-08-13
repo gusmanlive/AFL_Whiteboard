@@ -292,22 +292,27 @@ body.image-share-open { overflow:hidden; }
 }
 .oval-magnets.is-collapsed {
   min-width: 0;
-  padding-bottom: 8px;
+  padding: 10px 11px;
 }
 .oval-magnets-header {
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:8px;
 }
 .oval-magnets-label {
   display:block;
-  margin-bottom: 0;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#fff;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: .1em;
   text-transform: uppercase;
+  cursor:pointer;
+  line-height:1.2;
 }
+.oval-magnets-label:hover { opacity:.86; }
 .magnets-toggle-btn {
   display:inline-flex;
   align-items:center;
@@ -355,6 +360,23 @@ body.image-share-open { overflow:hidden; }
 .magnet-yellow { background:#facc15; }
 .magnet-green { background:#16a34a; }
 .magnet-pink { background:#ec4899; }
+
+/* Distinct magnet shapes improve colour recognition. */
+.magnet-swatch.magnet-green,
+.position-magnet-dot.magnet-green,
+.bench-magnet-dot.magnet-green {
+  border-radius: 4px;
+}
+.magnet-swatch.magnet-pink,
+.position-magnet-dot.magnet-pink,
+.bench-magnet-dot.magnet-pink {
+  border-radius: 0;
+  border: 0;
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  padding-top: 18%;
+  box-sizing: border-box;
+  filter: drop-shadow(0 1px 1px rgba(255,255,255,.75)) drop-shadow(0 2px 3px rgba(0,0,0,.22));
+}
 .oval-magnets-help {
   margin-top: 7px;
   color: rgba(255,255,255,.84);
@@ -659,7 +681,6 @@ footer {
   .oval-magnets { top:7px; left:7px; padding:9px 10px; min-width: 165px; }
   .oval-magnets-help { font-size:11px; }
   .magnet-swatch { width:calc(28px * var(--board-scale)); height:calc(28px * var(--board-scale)); font-size:calc(12px * var(--board-scale)); }
-  .magnets-toggle-btn { width:24px; height:24px; font-size:14px; }
   .position-node { width: calc(clamp(72px, 18.36%, 96px) * var(--board-box-scale)); }
   .position-role { font-size:calc(11px * var(--board-scale)); padding:calc(1px * var(--board-box-scale)) calc(5px * var(--board-box-scale)); }
   .position-input { height:calc(29px * var(--board-box-scale)); font-size:calc(11px * var(--board-scale)); padding:calc(4px * var(--board-box-scale)); }

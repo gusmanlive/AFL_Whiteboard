@@ -343,7 +343,7 @@
     const toggleBtn=$('magnetsToggleBtn');
     if(panel) panel.classList.toggle('is-collapsed',magnetsCollapsed);
     if(toggleBtn){
-      toggleBtn.textContent=magnetsCollapsed?'▾':'▴';
+      toggleBtn.textContent='Magnets';
       toggleBtn.setAttribute('aria-expanded',String(!magnetsCollapsed));
       toggleBtn.setAttribute('aria-label',magnetsCollapsed?'Expand magnets':'Collapse magnets');
       toggleBtn.title=magnetsCollapsed?'Expand magnets':'Collapse magnets';
@@ -737,17 +737,34 @@
   function setWeatherStatus(message,isError=false){
     const el=$('locationWeatherStatus'); el.textContent=message||''; el.classList.toggle('error',Boolean(isError));
   }
+  function australianStateAbbreviation(value=''){
+    const name=String(value||'').trim();
+    const map={
+      'Australian Capital Territory':'ACT',
+      'New South Wales':'NSW',
+      'Northern Territory':'NT',
+      'Queensland':'QLD',
+      'South Australia':'SA',
+      'Tasmania':'TAS',
+      'Victoria':'VIC',
+      'Western Australia':'WA'
+    };
+    return map[name] || name;
+  }
+
   async function lookupLocation(){
     const query=(state.details.weatherLocation || $('weatherLocation').value || '').trim();
     if(!query){ setWeatherStatus('Enter an oval, suburb or town first.',true); return false; }
     setWeatherStatus('Searching for location…');
     try{
-      const url=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json&countryCode=AU`;
+      const url=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10&language=en&format=json&countryCode=AU`;
       const response=await fetch(url); if(!response.ok) throw new Error('Location lookup failed');
-      const data=await response.json(); const place=data.results && data.results[0];
-      if(!place) throw new Error('Location not found');
+      const data=await response.json();
+      const places=Array.isArray(data.results)?data.results:[];
+      const place=places.find(item=>item?.country_code==='AU' || item?.country==='Australia');
+      if(!place) throw new Error('Australian location not found');
       state.details.latitude=place.latitude; state.details.longitude=place.longitude;
-      state.details.weatherLocation=[place.name,place.admin1].filter(Boolean).join(', ');
+      state.details.weatherLocation=[place.name,australianStateAbbreviation(place.admin1)].filter(Boolean).join(', ');
       $('weatherLocation').value=state.details.weatherLocation;
       saveState(); renderWeatherSummary();
       setWeatherStatus(`Location found: ${state.details.weatherLocation}.`);
@@ -1200,6 +1217,26 @@
       .filter(Boolean);
   }
 
+  function drawScreenshotMagnet(ctx,color,cx,cy,size,fillColor,scale=1){
+    ctx.beginPath();
+    if(color==='pink'){
+      ctx.moveTo(cx,cy-(size/2));
+      ctx.lineTo(cx+(size/2),cy+(size/2));
+      ctx.lineTo(cx-(size/2),cy+(size/2));
+      ctx.closePath();
+    }else if(color==='green'){
+      const radius=Math.max(2,Math.round(3*scale));
+      roundedRectPath(ctx,cx-(size/2),cy-(size/2),size,size,radius);
+    }else{
+      ctx.arc(cx,cy,size/2,0,Math.PI*2);
+    }
+    ctx.fillStyle=fillColor;
+    ctx.fill();
+    ctx.lineWidth=Math.max(2,2*scale);
+    ctx.strokeStyle='rgba(255,255,255,0.95)';
+    ctx.stroke();
+  }
+
   function renderOvalToCanvas(){
     const width=1200;
     const height=Math.round(width/0.72);
@@ -1297,10 +1334,9 @@
       if(magnet){
         const mx=roleX+roleW+magnetGap+magnetSize/2;
         const my=roleY+labelH/2;
-        ctx.beginPath(); ctx.arc(mx,my,magnetSize/2,0,Math.PI*2);
-        ctx.fillStyle=magnetColors[magnet.color] || '#111827'; ctx.fill();
-        ctx.lineWidth=Math.max(2,2*scale); ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.stroke();
-        drawFittedText(ctx,String(magnet.number),mx,my,magnetSize-5*scale*boardScale,Math.round(10*scale*boardScale),'900','#ffffff');
+        drawScreenshotMagnet(ctx,magnet.color,mx,my,magnetSize,magnetColors[magnet.color] || '#111827',scale);
+        const magnetTextY=magnet.color==='pink'?my+(magnetSize*0.12):my;
+        drawFittedText(ctx,String(magnet.number),mx,magnetTextY,magnetSize-5*scale*boardScale,Math.round(10*scale*boardScale),'900','#ffffff');
       }
 
       roundedRectPath(ctx,cx-inputW/2,cy-inputH/2,inputW,inputH,inputRadius);
@@ -1350,14 +1386,9 @@
         if(magnet){
           const mx=x+tileW-innerPad-(benchMagnetSize/2);
           const my=tileY+(tileH/2);
-          ctx.beginPath();
-          ctx.arc(mx,my,benchMagnetSize/2,0,Math.PI*2);
-          ctx.fillStyle=magnetColors[magnet.color] || '#111827';
-          ctx.fill();
-          ctx.lineWidth=Math.max(2,2*scale);
-          ctx.strokeStyle='rgba(255,255,255,0.95)';
-          ctx.stroke();
-          drawFittedText(ctx,String(magnet.number),mx,my,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
+          drawScreenshotMagnet(ctx,magnet.color,mx,my,benchMagnetSize,magnetColors[magnet.color] || '#111827',scale);
+          const benchMagnetTextY=magnet.color==='pink'?my+(benchMagnetSize*0.12):my;
+          drawFittedText(ctx,String(magnet.number),mx,benchMagnetTextY,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
 
           const textLeft=x+innerPad;
           const textRight=mx-(benchMagnetSize/2)-benchMagnetGap;
