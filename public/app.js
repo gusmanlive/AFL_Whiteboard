@@ -1355,7 +1355,7 @@
     const boardScale=currentBoardScale();
     const corner=16*scale;
     const screenshotTitle=String(state.boardTitle || '').trim();
-    const screenshotVersion='v1.5.0';
+    const screenshotVersion='v1.5.1';
     const whiteSurface=boardSurfaceMode==='white';
 
     ctx.save();
@@ -1550,7 +1550,7 @@
     const boardScale=currentBoardScale();
     const corner=16*scale;
     const screenshotTitle=String(state.boardTitle || '').trim();
-    const pdfVersion='v1.5.0';
+    const pdfVersion='v1.5.1';
     const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     const magnetColors={black:'#111827',blue:'#2563eb',red:'#dc2626',yellow:'#facc15',green:'#16a34a',pink:'#ec4899'};
 
