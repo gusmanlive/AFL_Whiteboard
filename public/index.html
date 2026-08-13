@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.4.5</div>
+      <div class="version">Version 1.4.6</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -43,13 +43,14 @@
       </div>
 
       <div class="whiteboard-layout">
-        <section class="field-card card">
+        <section id="fieldCard" class="field-card card">
           <div class="section-heading board-heading">
             <div class="board-heading-main">
               <input id="boardTitleInput" class="board-title-input" type="text" maxlength="80" placeholder="Your Team Name" aria-label="Board title" />
               <span class="eyebrow">TEAM BOARD</span>
               <h2 id="starting18Heading">Starting 18</h2>
             </div>
+            <button id="fullScreenBoardBtn" class="board-fullscreen-btn" type="button" aria-label="Enter full screen board mode" aria-pressed="false" title="Full screen board">⛶</button>
           </div>
 
           <div class="field-notes-layout">
@@ -61,6 +62,7 @@
               <div id="ovalMagnets" class="oval-magnets" aria-label="Swap magnets">
                 <div class="oval-magnets-header">
                   <button id="magnetsToggleBtn" class="oval-magnets-label" type="button" aria-label="Collapse magnets" aria-expanded="true" title="Collapse magnets">Magnets</button>
+                  <button id="undoBoardBtn" class="magnet-undo-btn" type="button" aria-label="Undo last board change" title="Undo last player or magnet change" disabled>↶</button>
                 </div>
                 <div class="oval-magnets-body">
                   <div class="oval-magnet-buttons">
@@ -90,6 +92,7 @@
                   <button id="boardScaleUpBtn" class="oval-scale-btn" type="button" aria-label="Increase board font size">A+</button>
                 </div>
               </div>
+              <button id="boardLockBtn" class="oval-board-lock" type="button" aria-label="Lock board player positions" aria-pressed="false" title="Lock player positions">🔓 <span>Lock</span></button>
             </div>
 
             <aside id="boardNotesPanel" class="board-notes" aria-label="Coach notes">
@@ -298,7 +301,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.4.5</span>
+    <span>AFL Coaches Whiteboard • v1.4.6</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

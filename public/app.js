@@ -7,6 +7,7 @@
   const BOARD_SCALE_MODE_KEY = 'afl-coaches-whiteboard-board-scale-mode';
   const BOARD_SCALE_VALUE_KEY = 'afl-coaches-whiteboard-board-scale-value';
   const BOARD_SCALE_COLLAPSED_KEY = 'afl-coaches-whiteboard-board-scale-collapsed';
+  const BOARD_LOCK_KEY = 'afl-coaches-whiteboard-board-locked';
   const MAX_PLAYERS = 50;
   const DEFAULT_BENCH_COUNT = 4;
   const MAX_BENCH_COUNT = 12;
@@ -166,6 +167,10 @@
       return saved === null ? true : saved === 'true';
     }catch(_){ return true; }
   }
+  function loadBoardLocked(){
+    try{ return localStorage.getItem(BOARD_LOCK_KEY) === 'true'; }
+    catch(_){ return false; }
+  }
 
   let notesVisible=loadNotesVisible();
   let activeMagnetColor='';
@@ -173,7 +178,84 @@
   let boardScaleMode=loadBoardScaleMode();
   let boardScaleValue=loadBoardScaleValue();
   let boardScaleCollapsed=loadBoardScaleCollapsed();
+  let boardLocked=loadBoardLocked();
+  let boardFullscreen=false;
+  const undoStack=[];
+  const MAX_UNDO_STEPS=20;
 
+
+  function captureUndoState(){
+    return JSON.parse(JSON.stringify({
+      assignments:state.assignments || {},
+      magnets:state.magnets || {},
+      magnetNextNumber:state.magnetNextNumber || {},
+      benchCount:state.benchCount || DEFAULT_BENCH_COUNT
+    }));
+  }
+
+  function pushUndoState(){
+    undoStack.push(captureUndoState());
+    if(undoStack.length>MAX_UNDO_STEPS) undoStack.shift();
+    renderUndoControl();
+  }
+
+  function renderUndoControl(){
+    const btn=$('undoBoardBtn');
+    if(btn) btn.disabled=undoStack.length===0;
+  }
+
+  function undoBoardAction(){
+    const previous=undoStack.pop();
+    if(!previous){ renderUndoControl(); return; }
+    state.assignments=previous.assignments || {};
+    state.magnets=previous.magnets || {};
+    state.magnetNextNumber=previous.magnetNextNumber || {black:1,blue:1,red:1,yellow:1,green:1,pink:1};
+    state.benchCount=Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(previous.benchCount)||DEFAULT_BENCH_COUNT));
+    saveState();
+    renderPositions(); renderBench(); renderDuplicateWarnings(); renderMagnetPalette(); applyBoardLock(); renderUndoControl();
+  }
+
+  function applyBoardLock(){
+    const card=$('fieldCard');
+    const btn=$('boardLockBtn');
+    if(card) card.classList.toggle('board-locked',boardLocked);
+    if(btn){
+      btn.setAttribute('aria-pressed',String(boardLocked));
+      btn.setAttribute('aria-label',boardLocked?'Unlock board player positions':'Lock board player positions');
+      btn.title=boardLocked?'Unlock player positions':'Lock player positions';
+      btn.innerHTML=boardLocked?'🔒 <span>Locked</span>':'🔓 <span>Lock</span>';
+    }
+    document.querySelectorAll('[data-assignment]').forEach(input=>{
+      input.readOnly=boardLocked;
+      input.setAttribute('aria-readonly',String(boardLocked));
+    });
+    const add=$('addBenchBtn');
+    if(add) add.disabled=boardLocked || state.benchCount>=MAX_BENCH_COUNT;
+    document.querySelectorAll('[data-remove-bench]').forEach(button=>button.disabled=boardLocked);
+  }
+
+  function setBoardLocked(locked){
+    boardLocked=Boolean(locked);
+    try{ localStorage.setItem(BOARD_LOCK_KEY,String(boardLocked)); }catch(_){ }
+    applyBoardLock();
+  }
+
+  function renderBoardFullscreen(){
+    document.body.classList.toggle('board-fullscreen',boardFullscreen);
+    const btn=$('fullScreenBoardBtn');
+    if(btn){
+      btn.setAttribute('aria-pressed',String(boardFullscreen));
+      btn.setAttribute('aria-label',boardFullscreen?'Exit full screen board mode':'Enter full screen board mode');
+      btn.title=boardFullscreen?'Exit full screen board':'Full screen board';
+      btn.textContent=boardFullscreen?'↙':'⛶';
+    }
+  }
+
+  function setBoardFullscreen(enabled){
+    boardFullscreen=Boolean(enabled);
+    renderBoardFullscreen();
+    setTimeout(()=>renderBoardScaleControls(),0);
+  }
 
   function clampBoardScale(value){
     const numeric=Number(value);
@@ -331,6 +413,11 @@
       btn.setAttribute('aria-pressed',String(isActive));
       btn.textContent=magnetCount(color)||'';
     });
+    const help=document.querySelector('.oval-magnets-help');
+    if(help){
+      help.classList.toggle('has-selection',Boolean(activeMagnetColor));
+      help.textContent=activeMagnetColor ? `SELECTED: ${activeMagnetColor.toUpperCase()} — tap a position or empty grass to cancel.` : 'Select a colour, then tap a position.';
+    }
   }
 
   function setActiveMagnetColor(color=''){
@@ -361,6 +448,7 @@
     if(!state.magnets) state.magnets={};
     if(!state.magnetNextNumber) state.magnetNextNumber={black:1,blue:1,red:1,yellow:1,green:1,pink:1};
     const current=getMagnet(slotId);
+    pushUndoState();
     if(current?.color===color){
       state.magnets[slotId]='';
       saveState(); renderPositions(); renderBench(); renderDuplicateWarnings(); renderMagnetPalette();
@@ -416,6 +504,7 @@
       };
       node.addEventListener('mousedown', maybeApplyMagnet);
     });
+    applyBoardLock();
   }
 
   function renderBench(){
@@ -436,7 +525,7 @@
       </div>`;
     }).join('');
     if($('benchCount')) $('benchCount').textContent=`${slots.length} position${slots.length===1?'':'s'}`;
-    if($('addBenchBtn')) $('addBenchBtn').disabled=slots.length>=MAX_BENCH_COUNT;
+    if($('addBenchBtn')) $('addBenchBtn').disabled=boardLocked || slots.length>=MAX_BENCH_COUNT;
     $('benchGrid').querySelectorAll('[data-assignment]').forEach(input=>{
       input.addEventListener('change',onAssignmentChange);
       input.addEventListener('blur',onAssignmentChange);
@@ -452,15 +541,19 @@
       btn.addEventListener('mousedown',event=>{ event.stopPropagation(); });
       btn.addEventListener('click',event=>{
         event.preventDefault(); event.stopPropagation();
+        if(boardLocked) return;
         removeBenchPosition(btn.dataset.removeBench);
       });
     });
+    applyBoardLock();
   }
 
   function removeBenchPosition(slotId){
+    if(boardLocked) return;
     const removeNumber=Number(String(slotId||'').replace('bench',''));
     const currentCount=Math.max(DEFAULT_BENCH_COUNT,Math.min(MAX_BENCH_COUNT,Number(state.benchCount)||DEFAULT_BENCH_COUNT));
     if(!Number.isInteger(removeNumber) || removeNumber<=DEFAULT_BENCH_COUNT || removeNumber>currentCount) return;
+    pushUndoState();
 
     // Keep interchange numbering contiguous by shifting every later slot down one.
     for(let n=removeNumber;n<currentCount;n++){
@@ -477,7 +570,8 @@
   }
 
   function addBenchPosition(){
-    if(state.benchCount>=MAX_BENCH_COUNT) return;
+    if(boardLocked || state.benchCount>=MAX_BENCH_COUNT) return;
+    pushUndoState();
     state.benchCount=Math.min(MAX_BENCH_COUNT,(Number(state.benchCount)||DEFAULT_BENCH_COUNT)+1);
     const slot=benchSlots(state.benchCount).at(-1);
     if(!state.assignments[slot.id]) state.assignments[slot.id]={playerId:'',text:''};
@@ -486,10 +580,12 @@
   }
 
   function onAssignmentChange(event){
+    if(boardLocked){ renderAssignmentsOnly(); return; }
     const key=event.target.dataset.assignment;
     const next=resolveAssignment(event.target.value);
     const old=state.assignments[key] || {playerId:'',text:''};
     if(old.playerId===next.playerId && old.text===next.text) return;
+    pushUndoState();
     state.assignments[key]=next;
     saveState();
     renderAssignmentsOnly();
@@ -1497,7 +1593,7 @@
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
-    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility(); renderBoardScaleControls();
+    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility(); renderBoardScaleControls(); applyBoardLock(); renderUndoControl(); renderBoardFullscreen();
   }
   function registerServiceWorker(){
     if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});
@@ -1507,6 +1603,9 @@
     renderAll(); applyInviteFromUrl(); bindDetails(); bindBoardTitle(); bindNotes();
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
+    $('undoBoardBtn')?.addEventListener('click',undoBoardAction);
+    $('boardLockBtn')?.addEventListener('click',()=>setBoardLocked(!boardLocked));
+    $('fullScreenBoardBtn')?.addEventListener('click',()=>setBoardFullscreen(!boardFullscreen));
     $('notesToggleBtn')?.addEventListener('click',()=>setNotesVisible(!notesVisible));
     $('boardScaleToggleBtn')?.addEventListener('click',()=>setBoardScaleCollapsed(!boardScaleCollapsed));
     $('boardScaleDownBtn')?.addEventListener('click',()=>adjustBoardScale(-0.1));
@@ -1538,6 +1637,14 @@
     ['sharePin','joinBoardPin'].forEach(id=>$(id).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,'').slice(0,4); }));
     syncAdapter.subscribe(mergeRemoteState);
     if(syncAdapter.onStatus) syncAdapter.onStatus(status=>{ shareStatus=status; renderShare(); });
+    $('oval')?.addEventListener('mousedown',event=>{
+      if(!activeMagnetColor) return;
+      if(event.target.closest?.('.position-node,.oval-magnets,.oval-top-actions,.oval-scale-controls,.oval-board-lock')) return;
+      setActiveMagnetColor('');
+    });
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape' && boardFullscreen) setBoardFullscreen(false);
+    });
     window.addEventListener('resize',()=>{ if(boardScaleMode==='auto') renderBoardScaleControls(); });
     const connection=await syncAdapter.connect().catch(()=>null);
     if(connection?.expired && state.mode==='shared'){ state.mode='local'; state.boardId=null; saveState({publish:false}); renderShare(); }
