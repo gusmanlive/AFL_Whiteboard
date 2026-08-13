@@ -258,65 +258,67 @@ body.board-fullscreen .bench-wrap { max-width:1100px; margin-left:auto; margin-r
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:16px;
+  padding:10px;
 }
 .image-share-backdrop {
   position:absolute;
   inset:0;
-  background:rgba(2,10,20,.72);
+  background:rgba(2,10,20,.82);
   backdrop-filter:blur(3px);
 }
 .image-share-panel {
   position:relative;
   z-index:1;
-  width:min(92vw, 620px);
-  max-height:92vh;
-  overflow:auto;
+  width:min(97vw, 1100px);
+  height:min(97dvh, 1050px);
+  max-height:97dvh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
   border-radius:16px;
   background:#fff;
-  box-shadow:0 24px 70px rgba(0,0,0,.35);
-  padding:16px;
-}
-.image-share-heading {
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:12px;
-}
-.image-share-heading h2 { margin:3px 0 0; color:var(--navy-900); font-size:20px; }
-.image-share-close {
-  width:34px;
-  height:34px;
-  border:1px solid var(--line);
-  border-radius:10px;
-  background:#f8fafc;
-  color:var(--navy-900);
-  font-size:22px;
-  line-height:1;
-  font-weight:800;
+  box-shadow:0 24px 70px rgba(0,0,0,.42);
+  padding:10px;
 }
 .image-share-preview-wrap {
+  flex:1 1 auto;
+  min-height:0;
   display:flex;
+  align-items:center;
   justify-content:center;
+  overflow:hidden;
   border:1px solid var(--line);
   border-radius:12px;
   background:#eef2f6;
-  padding:8px;
+  padding:6px;
 }
 .image-share-preview {
   display:block;
-  width:auto;
+  width:100%;
+  height:100%;
   max-width:100%;
-  max-height:62vh;
+  max-height:100%;
+  object-fit:contain;
   border-radius:10px;
   box-shadow:0 5px 18px rgba(0,0,0,.18);
 }
-.image-share-status { min-height:18px; margin-top:8px; color:var(--muted); font-size:11px; line-height:1.4; }
+.image-share-status { min-height:16px; margin:5px 2px 0; color:var(--muted); font-size:11px; line-height:1.3; text-align:center; }
 .image-share-status.error { color:#b91c1c; }
 .image-share-status.success { color:#166534; }
-.image-share-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-.image-share-actions .btn { flex:1 1 130px; }
+.image-share-actions {
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:7px;
+}
+.image-share-actions .btn {
+  min-height:54px;
+  padding:12px 10px;
+  border-radius:11px;
+  font-size:15px;
+  font-weight:900;
+}
 body.image-share-open { overflow:hidden; }
 
 .oval-magnets {
@@ -426,15 +428,6 @@ body.image-share-open { overflow:hidden; }
   transform: scale(1.16);
   box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #ffc928, inset 0 0 0 1px rgba(6,18,33,.25);
 }
-.magnet-swatch.magnet-pink.is-active {
-  filter:
-    drop-shadow(1px 0 0 rgba(255,255,255,.98))
-    drop-shadow(-1px 0 0 rgba(255,255,255,.98))
-    drop-shadow(0 1px 0 rgba(255,255,255,.98))
-    drop-shadow(0 -1px 0 rgba(255,255,255,.98))
-    drop-shadow(0 0 3px #ffffff)
-    drop-shadow(0 0 7px #ffc928);
-}
 .magnet-black { background:#111827; }
 .magnet-blue { background:#2563eb; }
 .magnet-red { background:#dc2626; }
@@ -442,44 +435,14 @@ body.image-share-open { overflow:hidden; }
 .magnet-green { background:#16a34a; }
 .magnet-pink { background:#ec4899; }
 
-/* Distinct magnet shapes improve colour recognition. */
+/* Distinct square magnets improve colour recognition while keeping identical sizing. */
 .magnet-swatch.magnet-green,
-.position-magnet-dot.magnet-green,
-.bench-magnet-dot.magnet-green {
-  border-radius: 4px;
-}
-
-/* Pink is an equilateral triangle. Width = height × 2/sqrt(3), so all three sides are equal. */
-.magnet-swatch.magnet-pink {
-  width: calc(var(--magnet-swatch-size) * 1.1547);
-  height: var(--magnet-swatch-size);
-}
-.position-magnet-dot.magnet-pink {
-  width: calc(var(--position-magnet-size) * 1.1547);
-  height: var(--position-magnet-size);
-  flex-basis: calc(var(--position-magnet-size) * 1.1547);
-}
-.bench-magnet-dot.magnet-pink {
-  width: calc(var(--bench-magnet-size) * 1.1547);
-  height: var(--bench-magnet-size);
-  flex-basis: calc(var(--bench-magnet-size) * 1.1547);
-}
 .magnet-swatch.magnet-pink,
+.position-magnet-dot.magnet-green,
 .position-magnet-dot.magnet-pink,
+.bench-magnet-dot.magnet-green,
 .bench-magnet-dot.magnet-pink {
-  border-radius: 0;
-  border: 0;
-  -webkit-clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-  padding-top: 16%;
-  box-sizing: border-box;
-  /* Multiple small white shadows create a consistent outline around all three triangle edges. */
-  filter:
-    drop-shadow(1px 0 0 rgba(255,255,255,.98))
-    drop-shadow(-1px 0 0 rgba(255,255,255,.98))
-    drop-shadow(0 1px 0 rgba(255,255,255,.98))
-    drop-shadow(0 -1px 0 rgba(255,255,255,.98))
-    drop-shadow(0 2px 3px rgba(0,0,0,.22));
+  border-radius: 4px;
 }
 .oval-magnets-help {
   margin-top: 7px;
@@ -896,3 +859,29 @@ footer {
 .ground-estimate-heading strong { color:var(--navy-900); font-size:18px; }
 .ground-estimate-card p { margin:7px 0 5px; color:#53677f; font-size:12px; line-height:1.45; }
 .ground-estimate-card small { color:#718198; font-size:10px; line-height:1.4; }
+
+/* v1.4.7: larger invisible touch targets on touch devices; visual dimensions stay unchanged. */
+@media (hover:none), (pointer:coarse) {
+  .position-node,
+  .magnet-swatch,
+  .magnet-undo-btn,
+  .oval-magnets-label,
+  .oval-notes-toggle,
+  .oval-share-image,
+  .oval-board-lock,
+  .board-fullscreen-btn,
+  .oval-scale-btn,
+  .oval-scale-toggle {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .image-share-actions .btn { min-height:58px; font-size:16px; }
+}
+
+@media (max-width:430px) {
+  .image-share-modal { padding:6px; }
+  .image-share-panel { width:99vw; height:98dvh; max-height:98dvh; padding:7px; border-radius:13px; }
+  .image-share-actions { gap:6px; }
+  .image-share-actions .btn { min-height:56px; padding:10px 6px; font-size:15px; }
+  .image-share-status { font-size:10px; }
+}

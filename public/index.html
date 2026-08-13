@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="version">Version 1.4.6</div>
+      <div class="version">Version 1.4.7</div>
       <button id="resetAllBtn" class="btn danger" type="button">Reset</button>
     </div>
   </header>
@@ -275,24 +275,17 @@
   </main>
 
 
-  <div id="boardImageModal" class="image-share-modal" hidden role="dialog" aria-modal="true" aria-labelledby="boardImageModalTitle">
+  <div id="boardImageModal" class="image-share-modal" hidden role="dialog" aria-modal="true" aria-label="Board image preview">
     <div class="image-share-backdrop" data-close-image-modal></div>
     <section class="image-share-panel">
-      <div class="image-share-heading">
-        <div>
-          <span class="eyebrow">BOARD IMAGE</span>
-          <h2 id="boardImageModalTitle">Oval Image</h2>
-        </div>
-        <button id="closeImageModalBtn" class="image-share-close" type="button" aria-label="Close image preview">×</button>
-      </div>
       <div class="image-share-preview-wrap">
         <img id="boardImagePreview" class="image-share-preview" alt="Preview of AFL whiteboard oval" />
       </div>
       <div id="boardImageStatus" class="image-share-status" role="status" aria-live="polite"></div>
       <div class="image-share-actions">
-        <button id="shareGeneratedImageBtn" class="btn primary" type="button">📤 Share Image</button>
-        <button id="saveGeneratedImageBtn" class="btn secondary" type="button">⬇ Save PNG</button>
-        <button id="cancelGeneratedImageBtn" class="btn secondary" type="button">Cancel</button>
+        <button id="shareGeneratedImageBtn" class="btn primary" type="button">Share</button>
+        <button id="saveGeneratedImageBtn" class="btn secondary" type="button">Save</button>
+        <button id="cancelGeneratedImageBtn" class="btn secondary" type="button">Close</button>
       </div>
     </section>
   </div>
@@ -301,7 +294,7 @@
 
   <footer>
     <span>© Gumball Spec – All rights reserved</span>
-    <span>AFL Coaches Whiteboard • v1.4.6</span>
+    <span>AFL Coaches Whiteboard • v1.4.7</span>
   </footer>
 
   <script src="sync-adapter.js"></script>

@@ -1315,14 +1315,7 @@
 
   function drawScreenshotMagnet(ctx,color,cx,cy,size,fillColor,scale=1){
     ctx.beginPath();
-    if(color==='pink'){
-      // Equilateral triangle: width = height × 2/sqrt(3).
-      const halfWidth=size/Math.sqrt(3);
-      ctx.moveTo(cx,cy-(size/2));
-      ctx.lineTo(cx+halfWidth,cy+(size/2));
-      ctx.lineTo(cx-halfWidth,cy+(size/2));
-      ctx.closePath();
-    }else if(color==='green'){
+    if(color==='green' || color==='pink'){
       const radius=Math.max(2,Math.round(3*scale));
       roundedRectPath(ctx,cx-(size/2),cy-(size/2),size,size,radius);
     }else{
@@ -1433,8 +1426,7 @@
         const mx=roleX+roleW+magnetGap+magnetSize/2;
         const my=roleY+labelH/2;
         drawScreenshotMagnet(ctx,magnet.color,mx,my,magnetSize,magnetColors[magnet.color] || '#111827',scale);
-        const magnetTextY=magnet.color==='pink'?my+(magnetSize*0.12):my;
-        drawFittedText(ctx,String(magnet.number),mx,magnetTextY,magnetSize-5*scale*boardScale,Math.round(10*scale*boardScale),'900','#ffffff');
+        drawFittedText(ctx,String(magnet.number),mx,my,magnetSize-5*scale*boardScale,Math.round(10*scale*boardScale),'900','#ffffff');
       }
 
       roundedRectPath(ctx,cx-inputW/2,cy-inputH/2,inputW,inputH,inputRadius);
@@ -1485,8 +1477,7 @@
           const mx=x+tileW-innerPad-(benchMagnetSize/2);
           const my=tileY+(tileH/2);
           drawScreenshotMagnet(ctx,magnet.color,mx,my,benchMagnetSize,magnetColors[magnet.color] || '#111827',scale);
-          const benchMagnetTextY=magnet.color==='pink'?my+(benchMagnetSize*0.12):my;
-          drawFittedText(ctx,String(magnet.number),mx,benchMagnetTextY,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
+          drawFittedText(ctx,String(magnet.number),mx,my,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
 
           const textLeft=x+innerPad;
           const textRight=mx-(benchMagnetSize/2)-benchMagnetGap;
@@ -1595,12 +1586,68 @@
   function renderAll(){
     renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility(); renderBoardScaleControls(); applyBoardLock(); renderUndoControl(); renderBoardFullscreen();
   }
+  function bindCoarsePointerHitSlop(){
+    const coarse=()=>window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints>0;
+    const controlSelectors=[
+      '.magnet-swatch', '.magnet-undo-btn', '.oval-magnets-label',
+      '.oval-notes-toggle', '.oval-share-image', '.oval-board-lock',
+      '.board-fullscreen-btn', '.oval-scale-btn', '.oval-scale-toggle'
+    ];
+
+    document.addEventListener('pointerup',event=>{
+      if(!coarse() || event.pointerType==='mouse') return;
+      if(event.target.closest?.('button,input,textarea,select,a,[data-position-node]')) return;
+
+      const x=event.clientX, y=event.clientY;
+      const near=(el,pad)=>{
+        const r=el.getBoundingClientRect();
+        return x>=r.left-pad && x<=r.right+pad && y>=r.top-pad && y<=r.bottom+pad;
+      };
+
+      // Give compact controls extra invisible hit area without changing their rendered size.
+      let best=null, bestDistance=Infinity;
+      document.querySelectorAll(controlSelectors.join(',')).forEach(el=>{
+        if(el.disabled || el.offsetParent===null || !near(el,7)) return;
+        const r=el.getBoundingClientRect();
+        const d=Math.hypot(x-(r.left+r.width/2),y-(r.top+r.height/2));
+        if(d<bestDistance){ best=el; bestDistance=d; }
+      });
+      if(best){
+        event.preventDefault();
+        event.stopPropagation();
+        best.click();
+        return;
+      }
+
+      // Player tiles get a slightly larger invisible tap zone on phones/tablets.
+      const oval=$('oval');
+      if(!oval || !near(oval,0)) return;
+      let positionTarget=null, positionDistance=Infinity;
+      oval.querySelectorAll('[data-position-node]').forEach(node=>{
+        if(!near(node,10)) return;
+        const r=node.getBoundingClientRect();
+        const d=Math.hypot(x-(r.left+r.width/2),y-(r.top+r.height/2));
+        if(d<positionDistance){ positionTarget=node; positionDistance=d; }
+      });
+      if(!positionTarget) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      const positionId=positionTarget.dataset.positionNode;
+      if(activeMagnetColor){
+        toggleSlotMagnet(positionId,activeMagnetColor);
+      }else if(!boardLocked){
+        positionTarget.querySelector('input')?.focus();
+      }
+    },{capture:true,passive:false});
+  }
+
   function registerServiceWorker(){
     if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});
   }
 
   document.addEventListener('DOMContentLoaded', async()=>{
-    renderAll(); applyInviteFromUrl(); bindDetails(); bindBoardTitle(); bindNotes();
+    renderAll(); applyInviteFromUrl(); bindDetails(); bindBoardTitle(); bindNotes(); bindCoarsePointerHitSlop();
     document.querySelectorAll('[data-magnet-color]').forEach(btn=>btn.addEventListener('click',()=>setActiveMagnetColor(activeMagnetColor===btn.dataset.magnetColor ? '' : btn.dataset.magnetColor)));
     $('magnetsToggleBtn')?.addEventListener('click',()=>setMagnetsCollapsed(!magnetsCollapsed));
     $('undoBoardBtn')?.addEventListener('click',undoBoardAction);
