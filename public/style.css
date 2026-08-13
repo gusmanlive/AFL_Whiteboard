@@ -292,7 +292,15 @@ body.image-share-open { overflow:hidden; }
 }
 .oval-magnets.is-collapsed {
   min-width: 0;
-  padding: 10px 11px;
+  height: 50px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+}
+.oval-magnets.is-collapsed .oval-magnets-header {
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 .oval-magnets-header {
   display:flex;
@@ -342,8 +350,9 @@ body.image-share-open { overflow:hidden; }
   flex-wrap:wrap;
 }
 .magnet-swatch {
-  width: calc(25px * var(--board-scale));
-  height: calc(25px * var(--board-scale));
+  --magnet-swatch-size: calc(25px * var(--board-scale));
+  width: var(--magnet-swatch-size);
+  height: var(--magnet-swatch-size);
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,.9);
   box-shadow: inset 0 0 0 1px rgba(6,18,33,.25);
@@ -367,15 +376,38 @@ body.image-share-open { overflow:hidden; }
 .bench-magnet-dot.magnet-green {
   border-radius: 4px;
 }
+
+/* Pink is an equilateral triangle. Width = height × 2/sqrt(3), so all three sides are equal. */
+.magnet-swatch.magnet-pink {
+  width: calc(var(--magnet-swatch-size) * 1.1547);
+  height: var(--magnet-swatch-size);
+}
+.position-magnet-dot.magnet-pink {
+  width: calc(var(--position-magnet-size) * 1.1547);
+  height: var(--position-magnet-size);
+  flex-basis: calc(var(--position-magnet-size) * 1.1547);
+}
+.bench-magnet-dot.magnet-pink {
+  width: calc(var(--bench-magnet-size) * 1.1547);
+  height: var(--bench-magnet-size);
+  flex-basis: calc(var(--bench-magnet-size) * 1.1547);
+}
 .magnet-swatch.magnet-pink,
 .position-magnet-dot.magnet-pink,
 .bench-magnet-dot.magnet-pink {
   border-radius: 0;
   border: 0;
+  -webkit-clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
   clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-  padding-top: 18%;
+  padding-top: 16%;
   box-sizing: border-box;
-  filter: drop-shadow(0 1px 1px rgba(255,255,255,.75)) drop-shadow(0 2px 3px rgba(0,0,0,.22));
+  /* Multiple small white shadows create a consistent outline around all three triangle edges. */
+  filter:
+    drop-shadow(1px 0 0 rgba(255,255,255,.98))
+    drop-shadow(-1px 0 0 rgba(255,255,255,.98))
+    drop-shadow(0 1px 0 rgba(255,255,255,.98))
+    drop-shadow(0 -1px 0 rgba(255,255,255,.98))
+    drop-shadow(0 2px 3px rgba(0,0,0,.22));
 }
 .oval-magnets-help {
   margin-top: 7px;
@@ -388,14 +420,15 @@ body.image-share-open { overflow:hidden; }
   box-shadow: 0 2px 7px rgba(0,0,0,.14);
 }
 .position-magnet-dot {
+  --position-magnet-size: calc(18px * var(--board-scale));
   display:inline-flex;
-  width: calc(18px * var(--board-scale));
-  height: calc(18px * var(--board-scale));
+  width: var(--position-magnet-size);
+  height: var(--position-magnet-size);
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,.92);
   box-shadow: 0 2px 5px rgba(0,0,0,.22);
   pointer-events: none;
-  flex: 0 0 calc(18px * var(--board-scale));
+  flex: 0 0 var(--position-magnet-size);
   align-items:center; justify-content:center; color:#fff; font-size:calc(10px * var(--board-scale)); font-weight:900; line-height:1; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.7);
 }
 .position-magnet-dot.magnet-black { background:#111827; }
@@ -537,7 +570,7 @@ body.image-share-open { overflow:hidden; }
 .bench-add-btn:disabled { color:#94a3b8; cursor:not-allowed; text-decoration:none; }
 .bench-label-row { display:flex; align-items:center; gap:6px; width:max-content; max-width:100%; margin-bottom:5px; cursor:pointer; }
 .bench-label-row label { margin-bottom:0 !important; cursor:pointer; }
-.bench-magnet-dot { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex:0 0 18px; border-radius:50%; border:2px solid #fff; color:#fff; font-size:10px; line-height:1; font-weight:900; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.7); box-shadow:0 2px 5px rgba(0,0,0,.22); }
+.bench-magnet-dot { --bench-magnet-size:18px; display:inline-flex; align-items:center; justify-content:center; width:var(--bench-magnet-size); height:var(--bench-magnet-size); flex:0 0 var(--bench-magnet-size); border-radius:50%; border:2px solid #fff; color:#fff; font-size:10px; line-height:1; font-weight:900; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.7); box-shadow:0 2px 5px rgba(0,0,0,.22); }
 .bench-magnet-dot.magnet-black { background:#111827; }
 .bench-magnet-dot.magnet-blue { background:#2563eb; }
 .bench-magnet-dot.magnet-red { background:#dc2626; }
@@ -679,8 +712,9 @@ footer {
   .oval-scale-toggle { min-width: 30px; width: 30px; height: 30px; font-size: 12px; }
   .oval-scale-current { min-width: 70px; }
   .oval-magnets { top:7px; left:7px; padding:9px 10px; min-width: 165px; }
+  .oval-magnets.is-collapsed { height:45px; padding:0 10px; }
   .oval-magnets-help { font-size:11px; }
-  .magnet-swatch { width:calc(28px * var(--board-scale)); height:calc(28px * var(--board-scale)); font-size:calc(12px * var(--board-scale)); }
+  .magnet-swatch { --magnet-swatch-size:calc(28px * var(--board-scale)); width:var(--magnet-swatch-size); height:var(--magnet-swatch-size); font-size:calc(12px * var(--board-scale)); }
   .position-node { width: calc(clamp(72px, 18.36%, 96px) * var(--board-box-scale)); }
   .position-role { font-size:calc(11px * var(--board-scale)); padding:calc(1px * var(--board-box-scale)) calc(5px * var(--board-box-scale)); }
   .position-input { height:calc(29px * var(--board-box-scale)); font-size:calc(11px * var(--board-scale)); padding:calc(4px * var(--board-box-scale)); }
@@ -702,8 +736,8 @@ footer {
   .position-node { width: calc(20.20% * var(--board-scale)); }
   .oval-magnets { min-width: 150px; }
   .oval-magnet-buttons { gap:6px; }
-  .position-magnet-dot { width:calc(16px * var(--board-scale)); height:calc(16px * var(--board-scale)); flex-basis:calc(16px * var(--board-scale)); font-size:calc(10px * var(--board-scale)); }
-  .bench-magnet-dot { width:16px; height:16px; flex-basis:16px; font-size:9px; }
+  .position-magnet-dot { --position-magnet-size:calc(16px * var(--board-scale)); width:var(--position-magnet-size); height:var(--position-magnet-size); flex-basis:var(--position-magnet-size); font-size:calc(10px * var(--board-scale)); }
+  .bench-magnet-dot { --bench-magnet-size:16px; width:var(--bench-magnet-size); height:var(--bench-magnet-size); flex-basis:var(--bench-magnet-size); font-size:9px; }
   .position-input { font-size:calc(10px * var(--board-scale)); }
   .bench-grid { grid-template-columns:1fr 1fr; }
   .match-info { grid-template-columns:1fr; }

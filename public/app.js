@@ -1220,9 +1220,11 @@
   function drawScreenshotMagnet(ctx,color,cx,cy,size,fillColor,scale=1){
     ctx.beginPath();
     if(color==='pink'){
+      // Equilateral triangle: width = height × 2/sqrt(3).
+      const halfWidth=size/Math.sqrt(3);
       ctx.moveTo(cx,cy-(size/2));
-      ctx.lineTo(cx+(size/2),cy+(size/2));
-      ctx.lineTo(cx-(size/2),cy+(size/2));
+      ctx.lineTo(cx+halfWidth,cy+(size/2));
+      ctx.lineTo(cx-halfWidth,cy+(size/2));
       ctx.closePath();
     }else if(color==='green'){
       const radius=Math.max(2,Math.round(3*scale));
