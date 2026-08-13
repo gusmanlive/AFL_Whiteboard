@@ -7,6 +7,7 @@
   const BOARD_SCALE_MODE_KEY = 'afl-coaches-whiteboard-board-scale-mode';
   const BOARD_SCALE_VALUE_KEY = 'afl-coaches-whiteboard-board-scale-value';
   const BOARD_SCALE_COLLAPSED_KEY = 'afl-coaches-whiteboard-board-scale-collapsed';
+  const BOARD_SURFACE_MODE_KEY = 'afl-coaches-whiteboard-board-surface-mode';
   const MAX_PLAYERS = 50;
   const DEFAULT_BENCH_COUNT = 4;
   const MAX_BENCH_COUNT = 12;
@@ -166,6 +167,12 @@
       return saved === null ? true : saved === 'true';
     }catch(_){ return true; }
   }
+  function loadBoardSurfaceMode(){
+    try{
+      const saved=localStorage.getItem(BOARD_SURFACE_MODE_KEY);
+      return saved === 'white' ? 'white' : 'grass';
+    }catch(_){ return 'grass'; }
+  }
 
   let notesVisible=loadNotesVisible();
   let activeMagnetColor='';
@@ -173,11 +180,36 @@
   let boardScaleMode=loadBoardScaleMode();
   let boardScaleValue=loadBoardScaleValue();
   let boardScaleCollapsed=loadBoardScaleCollapsed();
+  let boardSurfaceMode=loadBoardSurfaceMode();
   let boardLocked=false;
   let boardFullscreen=false;
   const undoStack=[];
   const MAX_UNDO_STEPS=20;
 
+
+  function renderBoardSurfaceMode(){
+    const oval=$('oval');
+    const btn=$('boardSurfaceToggleBtn');
+    const isWhite=boardSurfaceMode==='white';
+    if(oval) oval.classList.toggle('surface-white', isWhite);
+    if(btn){
+      btn.classList.toggle('is-white', isWhite);
+      btn.classList.toggle('is-grass', !isWhite);
+      btn.setAttribute('aria-pressed', String(isWhite));
+      btn.setAttribute('aria-label', isWhite ? 'Switch to grass board mode' : 'Switch to white board mode');
+      btn.title = isWhite ? 'Switch to grass board mode' : 'Switch to white board mode';
+    }
+  }
+
+  function setBoardSurfaceMode(mode){
+    boardSurfaceMode = mode === 'white' ? 'white' : 'grass';
+    try{ localStorage.setItem(BOARD_SURFACE_MODE_KEY, boardSurfaceMode); }catch(_){ }
+    renderBoardSurfaceMode();
+  }
+
+  function toggleBoardSurfaceMode(){
+    setBoardSurfaceMode(boardSurfaceMode === 'white' ? 'grass' : 'white');
+  }
 
   function captureUndoState(){
     return JSON.parse(JSON.stringify({
@@ -1323,23 +1355,28 @@
     const boardScale=currentBoardScale();
     const corner=16*scale;
     const screenshotTitle=String(state.boardTitle || '').trim();
-    const screenshotVersion='v1.4.0';
+    const screenshotVersion='v1.5.0';
+    const whiteSurface=boardSurfaceMode==='white';
 
     ctx.save();
     roundedRectPath(ctx,0,0,width,height,corner);
     ctx.clip();
-    const grass=ctx.createLinearGradient(0,0,0,height);
-    grass.addColorStop(0,'#7cc242');
-    grass.addColorStop(1,'#73b83c');
-    ctx.fillStyle=grass;
+    if(whiteSurface){
+      ctx.fillStyle='#ffffff';
+    }else{
+      const grass=ctx.createLinearGradient(0,0,0,height);
+      grass.addColorStop(0,'#7cc242');
+      grass.addColorStop(1,'#73b83c');
+      ctx.fillStyle=grass;
+    }
     ctx.fillRect(0,0,width,height);
     ctx.restore();
 
     // Match the live oval's field markings, without UI controls.
     const centre=canvasPointFromField(50,70,width,height);
     ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.strokeStyle='rgba(255,255,255,0.98)';
-    ctx.lineWidth=1.7*(width/100);
+    ctx.strokeStyle=whiteSurface ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.98)';
+    ctx.lineWidth=(whiteSurface ? 0.85 : 1.7)*(width/100);
     ctx.beginPath();
     ctx.ellipse(centre.x,centre.y,43*(width/100),58*(height/140),0,0,Math.PI*2);
     ctx.stroke();
@@ -1350,8 +1387,8 @@
     ctx.strokeStyle='#d62828';
     drawQuadraticFieldPath(ctx,[21,106],[50,79],[79,106],width,height);
 
-    ctx.strokeStyle='rgba(255,255,255,0.98)';
-    ctx.lineWidth=1.15*(width/100);
+    ctx.strokeStyle=whiteSurface ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.98)';
+    ctx.lineWidth=(whiteSurface ? 0.575 : 1.15)*(width/100);
     const sq=canvasPointFromField(31,57,width,height);
     const sq2=canvasPointFromField(69,83,width,height);
     ctx.strokeRect(sq.x,sq.y,sq2.x-sq.x,sq2.y-sq.y);
@@ -1382,9 +1419,14 @@
       const titleX=Math.round(18*scale);
       const titleY=Math.round(18*scale);
       roundedRectPath(ctx,titleX,titleY,titleW,titleH,titleH/2);
-      ctx.fillStyle='rgba(6,18,33,0.82)';
+      ctx.fillStyle=whiteSurface ? '#ffffff' : 'rgba(6,18,33,0.82)';
       ctx.fill();
-      drawFittedText(ctx,screenshotTitle,titleX+titleW/2,titleY+titleH/2,titleW-titlePadX*2,titleFont,'800','#ffffff');
+      if(whiteSurface){
+        ctx.lineWidth=Math.max(1,scale*0.9);
+        ctx.strokeStyle='rgba(0,0,0,0.92)';
+        ctx.stroke();
+      }
+      drawFittedText(ctx,screenshotTitle,titleX+titleW/2,titleY+titleH/2,titleW-titlePadX*2,titleFont,'800',whiteSurface ? '#000000' : '#ffffff');
     }
 
     POSITIONS.forEach(pos=>{
@@ -1402,20 +1444,25 @@
       const roleY=cy-(inputH/2)-labelGap-labelH;
 
       roundedRectPath(ctx,roleX,roleY,roleW,labelH,labelH/2);
-      ctx.fillStyle='rgba(6,18,33,0.84)';
+      ctx.fillStyle=whiteSurface ? '#ffffff' : 'rgba(6,18,33,0.84)';
       ctx.fill();
-      drawFittedText(ctx,roleText,roleX+roleW/2,roleY+labelH/2,roleW-labelPadX*2,labelFont,'900','#ffffff');
+      if(whiteSurface){
+        ctx.lineWidth=Math.max(1,scale*0.9);
+        ctx.strokeStyle='rgba(0,0,0,0.92)';
+        ctx.stroke();
+      }
+      drawFittedText(ctx,roleText,roleX+roleW/2,roleY+labelH/2,roleW-labelPadX*2,labelFont,'900',whiteSurface ? '#000000' : '#ffffff');
 
       if(magnet){
         const mx=roleX+roleW+magnetGap+magnetSize/2;
         const my=roleY+labelH/2;
-        drawScreenshotMagnet(ctx,magnet.color,mx,my,magnetSize,magnetColors[magnet.color] || '#111827',scale);
+        drawScreenshotMagnet(ctx,magnet.color,mx,my,magnetSize,magnetColors[magnet.color] || '#111827',scale,whiteSurface ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)', whiteSurface ? Math.max(1.5,1.5*scale) : null);
         drawFittedText(ctx,String(magnet.number),mx,my,magnetSize-5*scale*boardScale,Math.round(10*scale*boardScale),'900','#ffffff');
       }
 
       roundedRectPath(ctx,cx-inputW/2,cy-inputH/2,inputW,inputH,inputRadius);
       ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.fill();
-      ctx.lineWidth=Math.max(1,scale); ctx.strokeStyle='rgba(255,255,255,0.92)'; ctx.stroke();
+      ctx.lineWidth=Math.max(1,scale); ctx.strokeStyle=whiteSurface ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.92)'; ctx.stroke();
       drawFittedText(ctx,playerText,cx,cy,inputW-14*scale,playerFont,'700','#0b1728');
     });
 
@@ -1452,7 +1499,7 @@
         ctx.fillStyle='rgba(255,255,255,0.95)';
         ctx.fill();
         ctx.lineWidth=Math.max(1,scale);
-        ctx.strokeStyle='rgba(6,18,33,0.20)';
+        ctx.strokeStyle=whiteSurface ? 'rgba(0,0,0,0.95)' : 'rgba(6,18,33,0.20)';
         ctx.stroke();
 
         const magnet=player.magnet;
@@ -1460,7 +1507,7 @@
         if(magnet){
           const mx=x+tileW-innerPad-(benchMagnetSize/2);
           const my=tileY+(tileH/2);
-          drawScreenshotMagnet(ctx,magnet.color,mx,my,benchMagnetSize,magnetColors[magnet.color] || '#111827',scale);
+          drawScreenshotMagnet(ctx,magnet.color,mx,my,benchMagnetSize,magnetColors[magnet.color] || '#111827',scale,whiteSurface ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)', whiteSurface ? Math.max(1.5,1.5*scale) : null);
           drawFittedText(ctx,String(magnet.number),mx,my,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
 
           const textLeft=x+innerPad;
@@ -1475,7 +1522,7 @@
     // Bottom footer overlay on a single line, matching the app footer feel.
     ctx.textAlign='left';
     ctx.textBaseline='middle';
-    ctx.fillStyle='#ffffff';
+    ctx.fillStyle=whiteSurface ? '#000000' : '#ffffff';
     ctx.font=`700 ${footerFont}px ${family}`;
     ctx.fillText('© Gumball Spec – All rights reserved', Math.round(18*scale), footerBaseY);
     ctx.textAlign='right';
@@ -1503,7 +1550,7 @@
     const boardScale=currentBoardScale();
     const corner=16*scale;
     const screenshotTitle=String(state.boardTitle || '').trim();
-    const pdfVersion='v1.4.9';
+    const pdfVersion='v1.5.0';
     const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     const magnetColors={black:'#111827',blue:'#2563eb',red:'#dc2626',yellow:'#facc15',green:'#16a34a',pink:'#ec4899'};
 
@@ -1824,14 +1871,14 @@
     saveState({publish:false}); renderAll();
   }
   function renderAll(){
-    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility(); renderBoardScaleControls(); applyBoardLock(); renderUndoControl(); renderBoardFullscreen();
+    renderSetupDetails(); renderTeamList(); renderPlayerOptions(); renderPositions(); renderBench(); renderInfo(); renderNotes(); renderNotesVisibility(); renderDuplicateWarnings(); renderWeatherSummary(); renderShare(); renderMagnetPalette(); renderMagnetPaletteVisibility(); renderBoardScaleControls(); renderBoardSurfaceMode(); applyBoardLock(); renderUndoControl(); renderBoardFullscreen();
   }
   function bindCoarsePointerHitSlop(){
     const coarse=()=>window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints>0;
     const controlSelectors=[
       '.magnet-swatch', '.magnet-undo-btn', '.oval-magnets-label',
       '.oval-notes-toggle', '.oval-share-image',
-      '.board-fullscreen-btn', '.oval-scale-btn', '.oval-scale-toggle'
+      '.board-fullscreen-btn', '.oval-scale-btn', '.oval-scale-toggle', '.oval-surface-toggle'
     ];
 
     document.addEventListener('pointerup',event=>{
@@ -1897,6 +1944,7 @@
     $('boardScaleDownBtn')?.addEventListener('click',()=>adjustBoardScale(-0.1));
     $('boardScaleUpBtn')?.addEventListener('click',()=>adjustBoardScale(0.1));
     $('boardScaleResetBtn')?.addEventListener('click',resetBoardScaleAuto);
+    $('boardSurfaceToggleBtn')?.addEventListener('click',toggleBoardSurfaceMode);
     $('shareImageBtn')?.addEventListener('click',openBoardImageModal);
     $('shareGeneratedImageBtn')?.addEventListener('click',shareGeneratedBoardImage);
     $('saveGeneratedImageBtn')?.addEventListener('click',saveGeneratedBoardImage);
@@ -1926,7 +1974,7 @@
     if(syncAdapter.onStatus) syncAdapter.onStatus(status=>{ shareStatus=status; renderShare(); });
     $('oval')?.addEventListener('mousedown',event=>{
       if(!activeMagnetColor) return;
-      if(event.target.closest?.('.position-node,.oval-magnets,.oval-top-actions,.oval-scale-controls')) return;
+      if(event.target.closest?.('.position-node,.oval-magnets,.oval-top-actions,.oval-scale-controls,.oval-surface-toggle')) return;
       setActiveMagnetColor('');
     });
     document.addEventListener('keydown',event=>{
