@@ -1297,7 +1297,7 @@
       .filter(Boolean);
   }
 
-  function drawScreenshotMagnet(ctx,color,cx,cy,size,fillColor,scale=1){
+  function drawScreenshotMagnet(ctx,color,cx,cy,size,fillColor,scale=1,strokeColor='rgba(255,255,255,0.95)',strokeWidth=null){
     ctx.beginPath();
     if(color==='green' || color==='pink'){
       const radius=Math.max(2,Math.round(3*scale));
@@ -1307,8 +1307,8 @@
     }
     ctx.fillStyle=fillColor;
     ctx.fill();
-    ctx.lineWidth=Math.max(2,2*scale);
-    ctx.strokeStyle='rgba(255,255,255,0.95)';
+    ctx.lineWidth=strokeWidth ?? Math.max(2,2*scale);
+    ctx.strokeStyle=strokeColor;
     ctx.stroke();
   }
 
@@ -1492,26 +1492,178 @@
     return `${clean}${date?`-${date}`:''}.pdf`;
   }
 
-  function renderMonochromePrintCanvas(){
-    const source=renderOvalToCanvas();
+  function renderPrintablePdfCanvas(){
+    const width=1200;
+    const height=Math.round(width/0.72);
     const canvas=document.createElement('canvas');
-    canvas.width=source.width;
-    canvas.height=source.height;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(source,0,0);
-    const image=ctx.getImageData(0,0,canvas.width,canvas.height);
-    const data=image.data;
-    // Print-friendly four-level greyscale: light grass, dark labels/lines, white player tiles.
-    for(let i=0;i<data.length;i+=4){
-      const lum=(data[i]*0.299)+(data[i+1]*0.587)+(data[i+2]*0.114);
-      let grey;
-      if(lum<70) grey=28;
-      else if(lum<130) grey=92;
-      else if(lum<215) grey=210;
-      else grey=248;
-      data[i]=grey; data[i+1]=grey; data[i+2]=grey;
+    canvas.width=width;
+    canvas.height=height;
+    const ctx=canvas.getContext('2d');
+    const scale=width/760;
+    const boardScale=currentBoardScale();
+    const corner=16*scale;
+    const screenshotTitle=String(state.boardTitle || '').trim();
+    const pdfVersion='v1.4.9';
+    const family='-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+    const magnetColors={black:'#111827',blue:'#2563eb',red:'#dc2626',yellow:'#facc15',green:'#16a34a',pink:'#ec4899'};
+
+    ctx.save();
+    roundedRectPath(ctx,0,0,width,height,corner);
+    ctx.clip();
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,width,height);
+    ctx.restore();
+
+    const centre=canvasPointFromField(50,70,width,height);
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.strokeStyle='rgba(0,0,0,0.90)';
+    ctx.lineWidth=0.85*(width/100); // ~50% thinner than screenshot mode
+    ctx.beginPath();
+    ctx.ellipse(centre.x,centre.y,43*(width/100),58*(height/140),0,0,Math.PI*2);
+    ctx.stroke();
+
+    ctx.lineWidth=1.45*(width/100);
+    ctx.strokeStyle='#1769d2';
+    drawQuadraticFieldPath(ctx,[21,34],[50,61],[79,34],width,height);
+    ctx.stroke();
+    ctx.strokeStyle='#d62828';
+    drawQuadraticFieldPath(ctx,[21,106],[50,79],[79,106],width,height);
+    ctx.stroke();
+
+    ctx.strokeStyle='rgba(0,0,0,0.90)';
+    ctx.lineWidth=0.575*(width/100); // ~50% thinner than screenshot mode
+    const sq=canvasPointFromField(31,57,width,height);
+    const sq2=canvasPointFromField(69,83,width,height);
+    ctx.strokeRect(sq.x,sq.y,sq2.x-sq.x,sq2.y-sq.y);
+    ctx.beginPath();
+    ctx.ellipse(centre.x,centre.y,4.3*(width/100),4.3*(height/140),0,0,Math.PI*2);
+    ctx.stroke();
+
+    if(screenshotTitle){
+      const titleFont=Math.round(18*scale*Math.max(1,boardScale*0.95));
+      const titlePadX=Math.round(14*scale);
+      const titleH=Math.round(34*scale);
+      ctx.font=`800 ${titleFont}px ${family}`;
+      const titleW=Math.min(width - Math.round(110*scale), Math.ceil(ctx.measureText(screenshotTitle).width + titlePadX*2));
+      const titleX=Math.round(18*scale);
+      const titleY=Math.round(18*scale);
+      roundedRectPath(ctx,titleX,titleY,titleW,titleH,titleH/2);
+      ctx.fillStyle='#ffffff';
+      ctx.fill();
+      ctx.lineWidth=Math.max(1,scale*0.9);
+      ctx.strokeStyle='rgba(0,0,0,0.90)';
+      ctx.stroke();
+      drawFittedText(ctx,screenshotTitle,titleX+titleW/2,titleY+titleH/2,titleW-titlePadX*2,titleFont,'800','#000000');
     }
-    ctx.putImageData(image,0,0);
+
+    const inputW=Math.round(122*scale*boardScale);
+    const inputH=Math.round(34*scale*boardScale);
+    const inputRadius=Math.round(7*scale*boardScale);
+    const labelFont=Math.round(12*scale*boardScale);
+    const playerFont=Math.round(11*scale*boardScale);
+    const labelPadX=Math.round(7*scale*boardScale);
+    const labelH=Math.round(22*scale*boardScale);
+    const labelGap=Math.round(4*scale*boardScale);
+    const magnetSize=Math.round(18*scale*boardScale);
+    const magnetGap=Math.round(5*scale*boardScale);
+
+    POSITIONS.forEach(pos=>{
+      const cx=(pos.x/100)*width;
+      const cy=(pos.y/100)*height;
+      const playerText=currentPositionText(pos.id) || 'Player';
+      const magnet=getMagnet(pos.id);
+
+      ctx.font=`900 ${labelFont}px ${family}`;
+      const roleText=pos.role;
+      const roleW=Math.ceil(ctx.measureText(roleText).width + labelPadX*2);
+      const rowW=roleW + (magnet ? magnetGap+magnetSize : 0);
+      const rowX=cx-rowW/2;
+      const roleX=rowX;
+      const roleY=cy-(inputH/2)-labelGap-labelH;
+
+      roundedRectPath(ctx,roleX,roleY,roleW,labelH,labelH/2);
+      ctx.fillStyle='#ffffff';
+      ctx.fill();
+      ctx.lineWidth=Math.max(1,scale*0.9);
+      ctx.strokeStyle='rgba(0,0,0,0.90)';
+      ctx.stroke();
+      drawFittedText(ctx,roleText,roleX+roleW/2,roleY+labelH/2,roleW-labelPadX*2,labelFont,'900','#000000');
+
+      if(magnet){
+        const mx=roleX+roleW+magnetGap+magnetSize/2;
+        const my=roleY+labelH/2;
+        drawScreenshotMagnet(ctx,magnet.color,mx,my,magnetSize,magnetColors[magnet.color] || '#111827',scale,'rgba(0,0,0,0.95)',Math.max(1.5,1.5*scale));
+        drawFittedText(ctx,String(magnet.number),mx,my,magnetSize-5*scale*boardScale,Math.round(10*scale*boardScale),'900','#ffffff');
+      }
+
+      roundedRectPath(ctx,cx-inputW/2,cy-inputH/2,inputW,inputH,inputRadius);
+      ctx.fillStyle='#ffffff';
+      ctx.fill();
+      ctx.lineWidth=Math.max(1,scale*0.95);
+      ctx.strokeStyle='rgba(0,0,0,0.95)';
+      ctx.stroke();
+      drawFittedText(ctx,playerText,cx,cy,inputW-14*scale,playerFont,'700','#000000');
+    });
+
+    const interchangePlayers=currentInterchangePlayers();
+    const footerPadBottom=Math.round(16*scale);
+    const footerFont=Math.round(12*scale);
+    const footerBaseY=height-footerPadBottom;
+    const benchReservedBottom=footerFont + Math.round(26*scale);
+
+    if(interchangePlayers.length){
+      const sideMargin=Math.round(34*scale);
+      const availableW=width-(sideMargin*2);
+      const gap=Math.max(Math.round(7*scale),Math.round(5*scale*boardScale));
+      const tileH=Math.round(38*scale*(1 + ((boardScale-1)*0.35)));
+      const tileY=height-tileH-benchReservedBottom;
+      const count=interchangePlayers.length;
+      const maxTileW=Math.round(170*scale*(1 + ((boardScale-1)*0.18)));
+      const tileW=Math.min(maxTileW,Math.floor((availableW-(gap*(count-1)))/count));
+      const rowW=(tileW*count)+(gap*(count-1));
+      const startX=(width-rowW)/2;
+      const tileRadius=Math.round(8*scale);
+      const benchFont=Math.round(13*scale*boardScale);
+      const benchMagnetSize=Math.round(18*scale*boardScale);
+      const benchMagnetGap=Math.round(5*scale*boardScale);
+
+      interchangePlayers.forEach((player,index)=>{
+        const x=startX+(index*(tileW+gap));
+        const cx=x+(tileW/2);
+        roundedRectPath(ctx,x,tileY,tileW,tileH,tileRadius);
+        ctx.fillStyle='#ffffff';
+        ctx.fill();
+        ctx.lineWidth=Math.max(1,scale*0.95);
+        ctx.strokeStyle='rgba(0,0,0,0.95)';
+        ctx.stroke();
+
+        const magnet=player.magnet;
+        const innerPad=Math.round(8*scale);
+        if(magnet){
+          const mx=x+tileW-innerPad-(benchMagnetSize/2);
+          const my=tileY+(tileH/2);
+          drawScreenshotMagnet(ctx,magnet.color,mx,my,benchMagnetSize,magnetColors[magnet.color] || '#111827',scale,'rgba(0,0,0,0.95)',Math.max(1.5,1.5*scale));
+          drawFittedText(ctx,String(magnet.number),mx,my,benchMagnetSize-Math.round(5*scale*boardScale),Math.round(10*scale*boardScale),'900','#ffffff');
+
+          const textLeft=x+innerPad;
+          const textRight=mx-(benchMagnetSize/2)-benchMagnetGap;
+          drawFittedText(ctx,player.text,(textLeft+textRight)/2,tileY+(tileH/2),Math.max(12,textRight-textLeft),benchFont,'800','#000000');
+        }else{
+          drawFittedText(ctx,player.text,cx,tileY+(tileH/2),Math.max(12,tileW-(innerPad*2)),benchFont,'800','#000000');
+        }
+      });
+    }
+
+    ctx.textBaseline='middle';
+    ctx.fillStyle='#000000';
+    ctx.font=`700 ${footerFont}px ${family}`;
+    ctx.textAlign='left';
+    ctx.fillText('© Gumball Spec – All rights reserved', Math.round(18*scale), footerBaseY);
+    ctx.textAlign='right';
+    ctx.fillText(`AFL Coaches Whiteboard • ${pdfVersion}`, width - Math.round(18*scale), footerBaseY);
+    ctx.textAlign='center';
+
     return canvas;
   }
 
@@ -1570,7 +1722,7 @@
   function createPrintablePdf(){
     try{
       document.activeElement?.blur?.();
-      const canvas=renderMonochromePrintCanvas();
+      const canvas=renderPrintablePdfCanvas();
       const jpegBytes=dataUrlToBytes(canvas.toDataURL('image/jpeg',0.92));
       const pdfBytes=buildA4ImagePdf(jpegBytes,canvas.width,canvas.height);
       const blob=new Blob([pdfBytes],{type:'application/pdf'});
